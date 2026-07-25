@@ -28,6 +28,7 @@
   --primary-soft:#EDE6F7;
   --primary-line:#C9B8DE;
   --rose:#C08A9A;
+  --birthday:#D1567E;
   --sage:#7E9782;
   --gold:#C7A34E;
   --clay:#BE9268;
@@ -59,6 +60,7 @@
   --primary-soft:#332A47;
   --primary-line:#4E4066;
   --rose:#D3A0AF;
+  --birthday:#E687A3;
   --sage:#93B098;
   --gold:#D8BA76;
   --clay:#D0A57C;
@@ -701,9 +703,10 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
     <div class="panel-head"><h3 id="taskModalTitle">Nova tarefa</h3><button class="panel-close" onclick="closeTaskModal()">✕</button></div>
     <input type="hidden" id="taskId">
     <div class="field"><label class="field-label">Título</label><input type="text" id="taskTitle" placeholder="O que precisa ser feito?"></div>
+    <div class="field"><label class="field-label">Data</label><input type="date" id="taskDate"></div>
     <div class="field-row">
-      <div class="field"><label class="field-label">Data</label><input type="date" id="taskDate"></div>
-      <div class="field"><label class="field-label">Horário (opcional)</label><input type="time" id="taskTime"></div>
+      <div class="field"><label class="field-label">Horário de início (opcional)</label><input type="time" id="taskTime"></div>
+      <div class="field"><label class="field-label">Horário final (opcional)</label><input type="time" id="taskEndTime"></div>
     </div>
     <div class="field"><label class="field-label">Categoria</label><div class="cat-select" id="taskCatSelect"></div></div>
     <div class="field"><label class="field-label">Prioridade</label><div class="priority-select" id="taskPrioritySelect"></div></div>
@@ -2171,7 +2174,7 @@ function agendaRow(ev, occurDate){
 function birthdayRow(b){
   const days = daysUntilBirthday(b.date);
   return `<div class="list-item" style="cursor:pointer" onclick="openBirthdayModal('${b.id}')">
-    <div class="avatar-init">🎂</div>
+    <div class="avatar-init" style="background:var(--birthday); color:#fff;">🎂</div>
     <div class="content"><div class="title">${b.name}</div><div class="meta">${days===0?'Hoje!':(days===1?'Amanhã':'em '+days+' dias')} · ${formatBirthdayDate(b.date)}</div></div>
   </div>`;
 }
@@ -2382,7 +2385,7 @@ function renderMonthView(){
     const moon = getMoonPhaseForDate(d);
     const showMoonIcon = moon.name==='Lua Nova' || moon.name==='Lua Cheia' || moon.name==='Quarto Crescente' || moon.name==='Quarto Minguante';
     let pills = '';
-    let items = [...evs.map(e=>({label:e.title, color:CATEGORIES[e.category]?.color||'#999'})), ...bdays.map(b=>({label:'🎂 '+b.name, color:'#C08A9A'})), ...tasks.map(t=>({label:'☑ '+t.title, color:PRIORITIES[t.priority]?.color||'#999'}))];
+    let items = [...evs.map(e=>({label:e.title, color:CATEGORIES[e.category]?.color||'#999'})), ...bdays.map(b=>({label:'🎂 '+b.name, color:'#D1567E'})), ...tasks.map(t=>({label:'☑ '+t.title, color:PRIORITIES[t.priority]?.color||'#999'}))];
     items.slice(0,3).forEach(it=> pills += `<div class="month-pill" style="background:${it.color}22; color:${it.color}">${it.label}</div>`);
     if(items.length>3) pills += `<div class="month-pill more">+${items.length-3} mais</div>`;
     html += `<div class="month-cell ${inMonth?'':'other-month'} ${isSameDay(d,today())?'today':''}" onclick="openDayFromMonth(${d.getFullYear()},${d.getMonth()},${d.getDate()})">
@@ -2484,6 +2487,8 @@ function renderWeekView(){
 
   // place events absolutely
   const grid = document.querySelector('#calWeekView .week-grid');
+  const headerEl = document.querySelector('#calWeekView .week-head, #calWeekView .week-corner');
+  const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 0;
   days.forEach((d,dayIdx)=>{
     const evs = getEventsForDate(d).filter(e=>e.status!=='cancelled' && e.start);
     evs.forEach(ev=>{
@@ -2491,7 +2496,7 @@ function renderWeekView(){
       const [eh,em] = (ev.end||ev.start).split(':').map(Number);
       let startMin = sh*60+sm, endMin = eh*60+em;
       if(endMin<=startMin) endMin = startMin+30;
-      const top = ((startMin - startHour*60)/60)*44;
+      const top = headerHeight + ((startMin - startHour*60)/60)*44;
       const height = Math.max(20,((endMin-startMin)/60)*44);
       const col = document.querySelector(`.week-col[data-day="${dateKey(d)}"][data-hour="${startHour}"]`);
       if(!col) return;
@@ -2528,7 +2533,7 @@ function renderDayView(){
 
   let left = `<div class="card card-pad">
     <div class="section-title"><h3>Agenda do dia</h3><button class="btn btn-soft btn-sm" onclick="openEventModal(null,'${key}')">+ compromisso</button></div>
-    ${bdays.map(b=>`<div class="day-agenda-item"><div class="bar" style="background:#C08A9A"></div><div class="time-col">🎂</div><div class="body"><div class="t">${b.name}</div><div class="m">Aniversário</div></div></div>`).join('')}
+    ${bdays.map(b=>`<div class="day-agenda-item"><div class="bar" style="background:var(--birthday)"></div><div class="time-col">🎂</div><div class="body"><div class="t">${b.name}</div><div class="m">Aniversário</div></div></div>`).join('')}
     ${evs.length? evs.map(ev=>agendaRow(ev, key)).join('') : `<div class="empty-state"><span>🌿</span>Nada agendado — aproveite para respirar.</div>`}
   </div>
   <div class="card card-pad" style="margin-top:18px;">
@@ -2693,6 +2698,7 @@ function taskRow(t){
   return `<div class="checklist-row">
     <button class="check-circle ${t.done?'done':''}" onclick="toggleTaskDone('${t.id}')">${t.done?'<svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':''}</button>
     <span class="txt ${t.done?'done':''}" style="cursor:pointer" onclick="openTaskModal('${t.id}')">${t.title}</span>
+    ${t.time?`<span class="badge-soft">${t.time}${t.endTime?'–'+t.endTime:''}</span>`:''}
     ${prioChip(t.priority)}
   </div>`;
 }
@@ -2932,7 +2938,7 @@ function renderTasks(){
       <button class="check-circle ${t.done?'done':''}" onclick="toggleTaskDone('${t.id}')">${t.done?'<svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':''}</button>
       <div class="content" style="cursor:pointer" onclick="openTaskModal('${t.id}')">
         <div class="title ${t.done?'done':''}" style="${t.done?'text-decoration:line-through;color:var(--text-faint)':''}">${t.title}</div>
-        <div class="meta">${formatBirthdayDate(t.date)} ${t.time?'· '+t.time:''}</div>
+        <div class="meta">${formatBirthdayDate(t.date)} ${t.time?'· '+t.time+(t.endTime?'–'+t.endTime:''):''}</div>
       </div>
       ${catChip(t.category)} ${prioChip(t.priority)}
     </div>
@@ -2957,6 +2963,7 @@ function openTaskModal(id, prefillDate){
     document.getElementById('taskTitle').value = t.title;
     document.getElementById('taskDate').value = t.date;
     document.getElementById('taskTime').value = t.time||'';
+    document.getElementById('taskEndTime').value = t.endTime||'';
     document.getElementById('taskNotes').value = t.notes||'';
     buildCatSelect('taskCatSelect', t.category);
     buildPrioritySelect('taskPrioritySelect', t.priority);
@@ -2965,6 +2972,7 @@ function openTaskModal(id, prefillDate){
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskDate').value = prefillDate || dateKey(today());
     document.getElementById('taskTime').value = '';
+    document.getElementById('taskEndTime').value = '';
     document.getElementById('taskNotes').value = '';
   }
   document.getElementById('taskModalOverlay').classList.add('open');
@@ -2977,6 +2985,7 @@ function saveTaskFromModal(){
   const list = Store.tasks();
   const data = {
     title, date:document.getElementById('taskDate').value, time:document.getElementById('taskTime').value,
+    endTime:document.getElementById('taskEndTime').value,
     category:getPickedCat('taskCatSelect'), priority:getPickedPrio('taskPrioritySelect'),
     notes:document.getElementById('taskNotes').value,
   };
@@ -3556,7 +3565,7 @@ document.getElementById('globalSearch').addEventListener('input', (e)=>{
   if(!evs.length && !tasks.length && !bdays.length){ html += `<div class="empty-state">Nada encontrado para "${q}"</div>`; }
   evs.forEach(ev=> html += `<div class="list-item" style="cursor:pointer" onclick="document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.add('hidden');openDetailsPanel('${ev.id}')"><div class="avatar-init">🗓️</div><div class="content"><div class="title">${ev.title}</div><div class="meta">Compromisso · ${formatBirthdayDate(ev.date)}</div></div></div>`);
   tasks.forEach(t=> html += `<div class="list-item" style="cursor:pointer" onclick="document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.add('hidden');switchView('tasks');openTaskModal('${t.id}')"><div class="avatar-init">📋</div><div class="content"><div class="title">${t.title}</div><div class="meta">Tarefa · ${formatBirthdayDate(t.date)}</div></div></div>`);
-  bdays.forEach(b=> html += `<div class="list-item" style="cursor:pointer" onclick="document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.add('hidden');switchView('birthdays')"><div class="avatar-init">🎂</div><div class="content"><div class="title">${b.name}</div><div class="meta">Aniversário · ${formatBirthdayDate(b.date)}</div></div></div>`);
+  bdays.forEach(b=> html += `<div class="list-item" style="cursor:pointer" onclick="document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.add('hidden');switchView('birthdays')"><div class="avatar-init" style="background:var(--birthday); color:#fff;">🎂</div><div class="content"><div class="title">${b.name}</div><div class="meta">Aniversário · ${formatBirthdayDate(b.date)}</div></div></div>`);
   box.innerHTML = html;
   box.classList.remove('hidden');
 });
