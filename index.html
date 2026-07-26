@@ -123,7 +123,8 @@ a{color:inherit;}
 }
 .brand .glyph{
   width:34px; height:34px; border-radius:50%;
-  background:linear-gradient(135deg, var(--primary), var(--rose));
+  background-color:var(--primary);
+  background-image:linear-gradient(135deg, var(--primary), var(--rose));
   display:flex; align-items:center; justify-content:center;
   font-size:16px; box-shadow:var(--shadow-sm);
 }
@@ -181,7 +182,7 @@ a{color:inherit;}
   display:inline-flex; align-items:center; gap:7px; transition:all .15s ease; white-space:nowrap;
 }
 .btn svg{width:14px;height:14px;}
-.btn-primary{background:linear-gradient(135deg, var(--primary), var(--primary-deep)); color:#fff; box-shadow:var(--shadow-sm);}
+.btn-primary{background-color:var(--primary); background-image:linear-gradient(135deg, var(--primary), var(--primary-deep)); color:#fff; box-shadow:var(--shadow-sm);}
 .btn-primary:hover{filter:brightness(1.06); box-shadow:var(--shadow-md);}
 .btn-ghost{background:var(--surface); border-color:var(--border); color:var(--text);}
 .btn-ghost:hover{background:var(--surface-2);}
@@ -325,7 +326,7 @@ label.field-label{font-size:11.5px; font-weight:700; color:var(--text-soft); tex
 .tab-strip button.active{background:var(--surface); color:var(--primary-deep); box-shadow:var(--shadow-sm);}
 
 .progress-track{height:8px; border-radius:8px; background:var(--surface-2); overflow:hidden;}
-.progress-fill{height:100%; border-radius:8px; background:linear-gradient(90deg, var(--primary), var(--rose));}
+.progress-fill{height:100%; border-radius:8px; background-color:var(--primary); background-image:linear-gradient(90deg, var(--primary), var(--rose));}
 
 .bar-chart-row{display:flex; align-items:center; gap:10px; margin-bottom:9px;}
 .bar-chart-row .lbl{width:70px; font-size:11px; color:var(--text-soft); flex-shrink:0;}
@@ -335,8 +336,10 @@ label.field-label{font-size:11.5px; font-weight:700; color:var(--text-soft); tex
 
 .astro-hero{
   border-radius:var(--radius-lg); padding:26px 28px; color:#fff; position:relative; overflow:hidden;
-  background:linear-gradient(135deg, var(--plum), var(--primary-deep) 55%, var(--rose));
+  background-color:var(--plum);
+  background-image:linear-gradient(135deg, var(--plum), var(--primary-deep) 55%, var(--rose));
 }
+.astro-hero *{color:#fff;}
 .astro-hero::before{content:''; position:absolute; right:-40px; top:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,.08);}
 .astro-hero::after{content:''; position:absolute; left:20%; bottom:-60px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.06);}
 .astro-hero h2{font-size:24px; position:relative;}
@@ -406,6 +409,7 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
       <button class="nav-item" data-view="astrology"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.5"/></svg>Astrologia</button>
       <button class="nav-item" data-view="birthdays"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21v-8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8H4z"/><path d="M2 21h20M12 11V7M8 7c0-1.5 2-1.5 2-3S9 2 9 2M15 7c0 0 2 0 2-2s-1-2-1-2"/></svg>Aniversários</button>
       <button class="nav-item" data-view="consolidated"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>Consolidado</button>
+      <button class="nav-item" data-view="sprints"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>Sprints (RBS)</button>
     </nav>
 
     <div class="nav-group">
@@ -603,6 +607,17 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
       </div>
     </section>
 
+    <!-- ===================== SPRINTS (RBS) ===================== -->
+    <section class="view" id="view-sprints">
+      <div class="filters-bar" style="align-items:center; flex-wrap:wrap;">
+        <div id="sprintTabsRow" style="display:flex; gap:6px; flex-wrap:wrap; flex:1;"></div>
+        <button class="btn btn-soft btn-sm" onclick="promptNewSprint()">+ nova sprint</button>
+        <button class="btn btn-primary btn-sm" onclick="openSprintTaskModal()">+ nova task</button>
+      </div>
+      <div id="sprintCurrentBar" style="margin-bottom:14px;"></div>
+      <div id="sprintBoard"></div>
+    </section>
+
     <!-- ===================== SETTINGS ===================== -->
     <section class="view" id="view-settings">
       <div class="grid grid-2">
@@ -778,6 +793,43 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
   </div>
 </div>
 
+<!-- ============ SPRINT TASK MODAL (RBS) ============ -->
+<div class="modal-overlay" id="sprintTaskModalOverlay">
+  <div class="modal-box">
+    <div class="panel-head"><h3 id="sprintTaskModalTitle">Nova task de sprint</h3><button class="panel-close" onclick="closeSprintTaskModal()">✕</button></div>
+    <input type="hidden" id="sprintTaskId">
+    <div class="field"><label class="field-label">Título da task</label><input type="text" id="sprintTaskTitle" placeholder="O que precisa ser entregue?"></div>
+    <div class="field-row">
+      <div class="field"><label class="field-label">Macro</label><input type="text" id="sprintTaskMacro" list="sprintMacroList" placeholder="Ex: Aquisição"></div>
+      <div class="field"><label class="field-label">Épico</label><input type="text" id="sprintTaskEpico" list="sprintEpicoList" placeholder="Ex: Canais pagos"></div>
+    </div>
+    <datalist id="sprintMacroList"></datalist>
+    <datalist id="sprintEpicoList"></datalist>
+    <div class="field"><label class="field-label">Marco (opcional — para eu ter visibilidade mesmo quando não sou responsável pelo marco)</label><input type="text" id="sprintTaskMarco" placeholder="Ex: Lançamento Clube Q3"></div>
+    <div class="field-row">
+      <div class="field"><label class="field-label">Sprint</label><input type="text" id="sprintTaskSprint" list="sprintNameList" placeholder="Ex: Sprint 14 (07–18/07)"></div>
+      <div class="field"><label class="field-label">Responsável(is)</label><input type="text" id="sprintTaskResponsavel" placeholder="Ex: Stela, Daniela"></div>
+    </div>
+    <datalist id="sprintNameList"></datalist>
+    <div class="field">
+      <label class="field-label">Status</label>
+      <div class="priority-select" id="sprintTaskStatusSelect"></div>
+    </div>
+    <div class="field">
+      <label class="field-label">Prioridade</label>
+      <div class="priority-select" id="sprintTaskPrioritySelect"></div>
+    </div>
+    <div class="field"><label class="field-label">Notas</label><textarea id="sprintTaskNotes"></textarea></div>
+    <div style="display:flex; justify-content:space-between; margin-top:8px;">
+      <button class="btn btn-danger btn-sm hidden" id="sprintTaskDeleteBtn" onclick="deleteSprintTaskFromModal()">Excluir</button>
+      <div style="display:flex; gap:10px; margin-left:auto;">
+        <button class="btn btn-ghost btn-sm" onclick="closeSprintTaskModal()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveSprintTaskFromModal()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ EVENT DETAILS SIDE PANEL ============ -->
 <div class="overlay" id="detailsOverlay" onclick="if(event.target===this) closeDetailsPanel()">
   <div class="side-panel" id="detailsPanel"></div>
@@ -897,6 +949,27 @@ function itemCategoryLabel(item){
   const sub = item.subcategory && cat.subcategories && cat.subcategories[item.subcategory];
   return sub ? `${cat.label} · ${sub.label}` : cat.label;
 }
+
+/* ---------------------------------------------------------
+   Sprints (RBS) — status e prioridade das tasks de sprint
+--------------------------------------------------------- */
+const SPRINT_STATUS = {
+  nao_iniciado:         { label:'Não iniciado',          color:'#8B93A8' },
+  em_andamento:         { label:'Em andamento',          color:'#5E7F72' },
+  pausado:              { label:'Pausado',               color:'#C48A3F' },
+  aguardando_definicoes:{ label:'Aguardando definições', color:'#8B8FC9' },
+  despriorizado:        { label:'Despriorizado',         color:'#B0A6C2' },
+  cancelado:            { label:'Cancelado',             color:'#B25A63' },
+};
+const SPRINT_PRIORITY = {
+  altissima: { label:'Altíssima', color:'#A24E5C', order:0 },
+  alta:      { label:'Alta',      color:'#C48A3F', order:1 },
+  media:     { label:'Média',     color:'#8B8FC9', order:2 },
+  baixa:     { label:'Baixa',     color:'#8FA88A', order:3 },
+  baixissima:{ label:'Baixíssima',color:'#C7C2D6', order:4 },
+};
+function sprintStatusChip(key){ const s = SPRINT_STATUS[key]||SPRINT_STATUS.nao_iniciado; return `<span class="chip" style="background:${s.color}22; color:${s.color}">${s.label}</span>`; }
+function sprintPriorityChip(key){ const p = SPRINT_PRIORITY[key]||SPRINT_PRIORITY.media; return `<span class="chip" style="background:${p.color}22; color:${p.color}">${p.label}</span>`; }
 
 /* ---------------------------------------------------------
    4. MOON PHASE — cálculo real offline
@@ -1021,11 +1094,12 @@ function crossToNatal(sign, deg){
    em astrologia, terreiro, CLT, casamento, saúde).
 --------------------------------------------------------- */
 const LIFE_AREAS=[
-  {key:'trabalho',    label:'Trabalho & astrologia',          icon:'💼', color:'#9b6ed4'},
+  {key:'trabalho',    label:'Trabalho',                       icon:'💼', color:'#9b6ed4'},
+  {key:'astrologia',  label:'Astrologia',                      icon:'🌙', color:'#4E4370'},
   {key:'amorosa',     label:'Vida amorosa',                   icon:'💗', color:'#e87878'},
   {key:'relacionamentos',label:'Relacionamentos',             icon:'🤝', color:'#f3a0ad'},
   {key:'financas',    label:'Finanças',                       icon:'💰', color:'#92a1c3'},
-  {key:'espiritualidade',label:'Espiritualidade',             icon:'🌙', color:'#cca1c9'},
+  {key:'espiritualidade',label:'Espiritualidade',             icon:'🕯️', color:'#cca1c9'},
   {key:'familia',     label:'Família',                        icon:'🏡', color:'#d4a843'},
   {key:'imagem',      label:'Imagem & corpo',                 icon:'✨', color:'#3ab87a'},
   {key:'lazer',       label:'Lazer & hobbies',                icon:'🎨', color:'#e6a0b8'},
@@ -2018,7 +2092,9 @@ const Store = {
   saveJournal(o){ DB.set('journal', o); },
   birthdays(){ return DB.get('birthdays', []); },
   saveBirthdays(list){ DB.set('birthdays', list); },
-  settings(){ return DB.get('settings', {theme:'light', gcalConnected:false, gcalClientId:'', gcalApiKey:''}); },
+  sprintTasks(){ return DB.get('sprintTasks', []); },
+  saveSprintTasks(list){ DB.set('sprintTasks', list); },
+  settings(){ return DB.get('settings', {theme:'light', gcalConnected:false, gcalClientId:'', gcalApiKey:'', currentSprint:''}); },
   saveSettings(o){ DB.set('settings', o); },
 };
 
@@ -2043,6 +2119,16 @@ function seedDefaults(){
     {id:uid(), name:'Dormir cedo', icon:'🌙', days:[0,1,2,3,4,5,6], time:'23:00'},
   ];
   Store.saveHabits(habits);
+
+  // Exemplos de sprint (RBS) — substitua pelos seus dados reais do planejamento de Q3
+  const sprintTasks = [
+    {id:uid(), title:'[EXEMPLO] Definir criativos de aquisição do mês', macro:'Aquisição', epico:'Canais pagos', marco:'', sprint:'Sprint 13 (23/06–04/07)', responsavel:'Stela', status:'cancelado', priority:'media', notes:'Exemplo — apague ou edite quando importar seu planejamento real.'},
+    {id:uid(), title:'[EXEMPLO] Alinhar calendário editorial com GZH', macro:'Engajamento', epico:'Editorial GZH', marco:'Lançamento Clube Q3', sprint:'Sprint 14 (07/07–18/07)', responsavel:'Stela, Isabella', status:'em_andamento', priority:'alta', notes:''},
+    {id:uid(), title:'[EXEMPLO] Configurar automação de boas-vindas Petlove', macro:'Petlove', epico:'Onboarding', marco:'', sprint:'Sprint 14 (07/07–18/07)', responsavel:'Stela', status:'aguardando_definicoes', priority:'altissima', notes:''},
+  ];
+  Store.saveSprintTasks(sprintTasks);
+  const s = Store.settings(); s.currentSprint = 'Sprint 14 (07/07–18/07)'; Store.saveSettings(s);
+
   DB.set('seeded', true);
 }
 
@@ -2136,6 +2222,7 @@ function switchView(view){
     astrology:['Astrologia','Mapa natal, revolução solar, progressões e trânsitos'],
     birthdays:['Aniversários','As pessoas que você ama celebradas no tempo certo'],
     consolidated:['Consolidado','Sua jornada em números'],
+    sprints:['Sprints (RBS)','Suas tasks, organizadas por macro, épico e sprint'],
     settings:['Configurações','Personalize seu espaço'],
   };
   document.getElementById('pageTitle').textContent = titles[view][0];
@@ -2149,6 +2236,7 @@ function switchView(view){
   if(view==='astrology') renderAstrology();
   if(view==='birthdays') renderBirthdays();
   if(view==='consolidated') renderConsolidated();
+  if(view==='sprints') renderSprints();
   if(view==='settings') renderSettings();
 }
 document.querySelectorAll('.nav-item').forEach(n=> n.addEventListener('click', ()=> switchView(n.dataset.view)));
@@ -2691,7 +2779,7 @@ function renderWeekView(){
       body += `<div class="week-col" data-day="${dateKey(d)}" data-hour="${h}" onclick="quickAddAtSlot('${dateKey(d)}',${h})"></div>`;
     });
   }
-  document.getElementById('calWeekView').innerHTML = astroHtml + `<div class="week-grid">${head}${body}</div>`;
+  document.getElementById('calWeekView').innerHTML = astroHtml + `<div class="week-grid">${head}${body}</div>` + sprintTasksCardHtml();
 
   // place events absolutely
   const grid = document.querySelector('#calWeekView .week-grid');
@@ -2759,7 +2847,7 @@ function renderDayView(){
       const done = !!logs[h.id+'_'+key];
       return `<div class="checklist-row"><button class="check-circle ${done?'done':''}" onclick="toggleHabit('${h.id}','${key}')">${done?'<svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':''}</button><span class="txt ${done?'done':''}">${h.icon} ${h.name}</span>${h.time?`<span class="badge-soft">${h.time}</span>`:''}<span class="streak">${habitStreak(h.id)}d</span></div>`;
     }).join('') : `<div class="empty-state"><span>🌱</span>Nenhum hábito programado.</div>`}
-  </div>`;
+  </div>${sprintTasksCardHtml()}`;
 
   const da = getDayAstro(d);
   const touchedHousesHtml = da.touchedHouses.map(h=>{
@@ -3213,6 +3301,7 @@ document.getElementById('quickAddBtn').addEventListener('click', ()=>{
   if(currentView==='tasks') openTaskModal();
   else if(currentView==='habits') openHabitModal();
   else if(currentView==='birthdays') openBirthdayModal();
+  else if(currentView==='sprints') openSprintTaskModal();
   else openEventModal();
 });
 
@@ -3698,6 +3787,177 @@ function renderConsolidated(){
 }
 document.getElementById('consPeriod').addEventListener('change', renderConsolidated);
 document.getElementById('consCategory').addEventListener('change', renderConsolidated);
+
+/* ============================================================
+   19b. SPRINTS (RBS) — macro › épico › tasks, por sprint
+============================================================ */
+function allSprintNames(){
+  const names = [...new Set(Store.sprintTasks().map(t=>t.sprint).filter(Boolean))];
+  // ordena por número de sprint quando o nome começa com "Sprint N", senão por ordem alfabética
+  return names.sort((a,b)=>{
+    const na = a.match(/(\d+)/), nb = b.match(/(\d+)/);
+    if(na && nb) return Number(na[1]) - Number(nb[1]);
+    return a.localeCompare(b);
+  });
+}
+function currentSprintName(){ return Store.settings().currentSprint || ''; }
+function setCurrentSprint(name){
+  const s = Store.settings(); s.currentSprint = name; Store.saveSettings(s);
+  toast('Sprint atual definida 🚀');
+  if(currentView==='sprints') renderSprints();
+  if(currentView==='calendar') renderCalendar();
+}
+function promptNewSprint(){
+  const name = prompt('Nome da nova sprint (ex: "Sprint 15 (21/07–01/08)")');
+  if(!name) return;
+  window._sprintTabSelected = name;
+  renderSprints();
+}
+function sprintTasksFor(sprintName){
+  return Store.sprintTasks().filter(t=>t.sprint===sprintName)
+    .sort((a,b)=> (SPRINT_PRIORITY[a.priority]?.order ?? 9) - (SPRINT_PRIORITY[b.priority]?.order ?? 9));
+}
+function renderSprints(){
+  const names = allSprintNames();
+  if(!window._sprintTabSelected || !names.includes(window._sprintTabSelected)){
+    window._sprintTabSelected = currentSprintName() && names.includes(currentSprintName()) ? currentSprintName() : (names[names.length-1] || '');
+  }
+  const sel = window._sprintTabSelected;
+
+  document.getElementById('sprintTabsRow').innerHTML = names.length ? names.map(n=>
+    `<button type="button" class="pill-choice ${n===sel?'active':''}" onclick="window._sprintTabSelected='${n.replace(/'/g,"\\'")}'; renderSprints();">${n===currentSprintName()?'⭐ ':''}${n}</button>`
+  ).join('') : `<span style="font-size:12.5px; color:var(--text-faint);">Nenhuma sprint criada ainda — clique em "+ nova sprint" ou "+ nova task".</span>`;
+
+  if(!sel){ document.getElementById('sprintCurrentBar').innerHTML=''; document.getElementById('sprintBoard').innerHTML=''; return; }
+
+  document.getElementById('sprintCurrentBar').innerHTML = `
+    <div class="gcal-status" style="justify-content:space-between;">
+      <span>${sel===currentSprintName() ? '⭐ Esta é a sua sprint atual — aparece em "Tarefas da sprint" no Dia e na Semana.' : 'Esta não é a sprint marcada como atual.'}</span>
+      ${sel!==currentSprintName() ? `<button class="btn btn-soft btn-sm" onclick="setCurrentSprint('${sel.replace(/'/g,"\\'")}')">Marcar como atual</button>` : ''}
+    </div>`;
+
+  const tasks = sprintTasksFor(sel);
+  if(!tasks.length){ document.getElementById('sprintBoard').innerHTML = `<div class="card card-pad"><div class="empty-state"><span>🚀</span>Nenhuma task nesta sprint ainda.</div></div>`; return; }
+
+  // agrupa por Macro > Épico, mantendo a ordenação por prioridade já aplicada dentro de cada grupo
+  const macros = {};
+  tasks.forEach(t=>{
+    const macro = t.macro || 'Sem macro definido';
+    const epico = t.epico || 'Sem épico definido';
+    macros[macro] = macros[macro] || {};
+    macros[macro][epico] = macros[macro][epico] || [];
+    macros[macro][epico].push(t);
+  });
+
+  let html = '';
+  Object.entries(macros).forEach(([macro, epicos])=>{
+    html += `<div class="card card-pad" style="margin-bottom:16px;"><h3 style="font-size:16px; margin-bottom:12px;">📦 ${macro}</h3>`;
+    Object.entries(epicos).forEach(([epico, list])=>{
+      html += `<div style="margin-bottom:14px;"><p style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-faint); margin-bottom:8px;">🏳️ ${epico}</p>`;
+      list.forEach(t=>{
+        html += `<div class="list-item" style="cursor:pointer; align-items:flex-start;" onclick="openSprintTaskModal('${t.id}')">
+          <div class="content">
+            <div class="title">${t.title}${t.marco?` <span class="badge-soft">🏁 ${t.marco}</span>`:''}</div>
+            <div class="meta">👤 ${t.responsavel||'—'}</div>
+            <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">${sprintPriorityChip(t.priority)}${sprintStatusChip(t.status)}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('sprintBoard').innerHTML = html;
+}
+function buildSprintDatalists(){
+  const macros = [...new Set(Store.sprintTasks().map(t=>t.macro).filter(Boolean))];
+  const epicos = [...new Set(Store.sprintTasks().map(t=>t.epico).filter(Boolean))];
+  document.getElementById('sprintMacroList').innerHTML = macros.map(m=>`<option value="${m}">`).join('');
+  document.getElementById('sprintEpicoList').innerHTML = epicos.map(e=>`<option value="${e}">`).join('');
+  document.getElementById('sprintNameList').innerHTML = allSprintNames().map(n=>`<option value="${n}">`).join('');
+}
+function openSprintTaskModal(id){
+  buildSprintDatalists();
+  document.getElementById('sprintTaskModalTitle').textContent = id ? 'Editar task' : 'Nova task de sprint';
+  document.getElementById('sprintTaskDeleteBtn').classList.toggle('hidden', !id);
+  const statusEl = document.getElementById('sprintTaskStatusSelect');
+  const prioEl = document.getElementById('sprintTaskPrioritySelect');
+  if(id){
+    const t = Store.sprintTasks().find(x=>x.id===id);
+    document.getElementById('sprintTaskId').value = t.id;
+    document.getElementById('sprintTaskTitle').value = t.title;
+    document.getElementById('sprintTaskMacro').value = t.macro||'';
+    document.getElementById('sprintTaskEpico').value = t.epico||'';
+    document.getElementById('sprintTaskMarco').value = t.marco||'';
+    document.getElementById('sprintTaskSprint').value = t.sprint||(window._sprintTabSelected||'');
+    document.getElementById('sprintTaskResponsavel').value = t.responsavel||'';
+    document.getElementById('sprintTaskNotes').value = t.notes||'';
+    statusEl.innerHTML = Object.entries(SPRINT_STATUS).map(([k,s])=>`<button type="button" class="pill-choice ${t.status===k?'active':''}" style="color:${s.color}" data-cat="${k}" onclick="pickCat(this,'sprintTaskStatusSelect')">${s.label}</button>`).join('');
+    prioEl.innerHTML = Object.entries(SPRINT_PRIORITY).map(([k,p])=>`<button type="button" class="pill-choice ${t.priority===k?'active':''}" style="color:${p.color}" data-cat="${k}" onclick="pickCat(this,'sprintTaskPrioritySelect')">${p.label}</button>`).join('');
+  } else {
+    document.getElementById('sprintTaskId').value = '';
+    document.getElementById('sprintTaskTitle').value = '';
+    document.getElementById('sprintTaskMacro').value = '';
+    document.getElementById('sprintTaskEpico').value = '';
+    document.getElementById('sprintTaskMarco').value = '';
+    document.getElementById('sprintTaskSprint').value = window._sprintTabSelected || currentSprintName() || '';
+    document.getElementById('sprintTaskResponsavel').value = 'Stela';
+    document.getElementById('sprintTaskNotes').value = '';
+    statusEl.innerHTML = Object.entries(SPRINT_STATUS).map(([k,s])=>`<button type="button" class="pill-choice ${k==='nao_iniciado'?'active':''}" style="color:${s.color}" data-cat="${k}" onclick="pickCat(this,'sprintTaskStatusSelect')">${s.label}</button>`).join('');
+    prioEl.innerHTML = Object.entries(SPRINT_PRIORITY).map(([k,p])=>`<button type="button" class="pill-choice ${k==='media'?'active':''}" style="color:${p.color}" data-cat="${k}" onclick="pickCat(this,'sprintTaskPrioritySelect')">${p.label}</button>`).join('');
+  }
+  document.getElementById('sprintTaskModalOverlay').classList.add('open');
+}
+function closeSprintTaskModal(){ document.getElementById('sprintTaskModalOverlay').classList.remove('open'); }
+function saveSprintTaskFromModal(){
+  const title = document.getElementById('sprintTaskTitle').value.trim();
+  if(!title){ toast('Dê um título à task'); return; }
+  const sprint = document.getElementById('sprintTaskSprint').value.trim();
+  if(!sprint){ toast('Informe a sprint desta task'); return; }
+  const id = document.getElementById('sprintTaskId').value;
+  const list = Store.sprintTasks();
+  const data = {
+    title,
+    macro: document.getElementById('sprintTaskMacro').value.trim(),
+    epico: document.getElementById('sprintTaskEpico').value.trim(),
+    marco: document.getElementById('sprintTaskMarco').value.trim(),
+    sprint,
+    responsavel: document.getElementById('sprintTaskResponsavel').value.trim(),
+    status: getPickedCat('sprintTaskStatusSelect'),
+    priority: getPickedCat('sprintTaskPrioritySelect'),
+    notes: document.getElementById('sprintTaskNotes').value,
+  };
+  if(id){ const idx = list.findIndex(t=>t.id===id); list[idx] = {...list[idx], ...data}; }
+  else list.push({id:uid(), ...data});
+  Store.saveSprintTasks(list);
+  window._sprintTabSelected = sprint;
+  closeSprintTaskModal();
+  toast('Task salva 🚀');
+  if(currentView==='sprints') renderSprints();
+  if(currentView==='calendar') renderCalendar();
+  if(currentView==='home') renderHome();
+}
+function deleteSprintTaskFromModal(){
+  const id = document.getElementById('sprintTaskId').value;
+  Store.saveSprintTasks(Store.sprintTasks().filter(t=>t.id!==id));
+  closeSprintTaskModal();
+  toast('Task removida');
+  if(currentView==='sprints') renderSprints();
+  if(currentView==='calendar') renderCalendar();
+}
+// Card "Tarefas da sprint" reutilizado no Dia e na Semana — mostra a sprint marcada como atual
+function sprintTasksCardHtml(){
+  const sprintName = currentSprintName();
+  if(!sprintName) return '';
+  const tasks = sprintTasksFor(sprintName).filter(t=>t.status!=='cancelado');
+  return `<div class="card card-pad" style="margin-top:18px;">
+    <div class="section-title"><h3>🚀 Tarefas da sprint</h3><span class="badge-soft">${sprintName}</span></div>
+    ${tasks.length ? tasks.map(t=>`<div class="list-item" style="cursor:pointer" onclick="openSprintTaskModal('${t.id}')">
+      <div class="content"><div class="title">${t.title}${t.marco?` <span class="badge-soft">🏁 ${t.marco}</span>`:''}</div><div class="meta">${t.macro?t.macro+' · ':''}${t.epico||''} · 👤 ${t.responsavel||'—'}</div></div>
+      <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">${sprintPriorityChip(t.priority)}${sprintStatusChip(t.status)}</div>
+    </div>`).join('') : `<div class="empty-state"><span>🚀</span>Nenhuma task ativa nesta sprint.</div>`}
+  </div>`;
+}
 
 /* ============================================================
    20. SETTINGS VIEW + GOOGLE CALENDAR STUB
