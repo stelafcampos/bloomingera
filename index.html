@@ -660,6 +660,10 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
       <label class="field-label">Categoria</label>
       <div class="cat-select" id="eventCatSelect"></div>
     </div>
+    <div class="field hidden" id="eventSubcatSelectRow">
+      <label class="field-label">Subcategoria</label>
+      <div class="cat-select" id="eventSubcatSelect"></div>
+    </div>
     <div class="field">
       <label class="field-label">Prioridade</label>
       <div class="priority-select" id="eventPrioritySelect"></div>
@@ -670,12 +674,25 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
     </div>
     <div class="field" id="eventRecurrenceRow">
       <label class="field-label">Repetir</label>
-      <select id="eventRecurrence">
+      <select id="eventRecurrenceFreq" onchange="updateRecurrenceUI()">
         <option value="">Não se repete</option>
-        <option value="daily">Todos os dias</option>
-        <option value="weekdays">Segunda a sexta</option>
-        <option value="weekly">Semanalmente (mesmo dia da semana)</option>
+        <option value="daily">Diariamente</option>
+        <option value="weekly">Semanalmente</option>
+        <option value="monthly">Mensalmente</option>
       </select>
+      <div id="eventRecurrenceDetail" class="hidden" style="margin-top:12px; background:var(--surface-2); padding:12px 14px; border-radius:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:12.5px; color:var(--text-soft);">A cada</span>
+          <input type="number" min="1" id="eventRecurrenceInterval" value="1" style="width:64px;" oninput="updateRecurrencePreview()">
+          <span id="eventRecurrenceUnitLabel" style="font-size:12.5px; color:var(--text-soft);">dia(s)</span>
+        </div>
+        <div id="eventRecurrenceWeekdaysRow" class="hidden" style="margin-top:12px;">
+          <label class="field-label">Em quais dias da semana</label>
+          <div class="priority-select" id="eventRecurrenceWeekdays"></div>
+          <div style="font-size:10.5px; color:var(--text-faint); margin-top:4px;">Escolha mais de um dia para repetir várias vezes por semana (ex: 2x na semana)</div>
+        </div>
+        <div id="eventRecurrencePreview" style="margin-top:10px; font-size:12px; color:var(--primary-deep); font-weight:700;"></div>
+      </div>
     </div>
     <div id="eventSingleNote" class="hidden" style="font-size:11.5px; color:var(--text-faint); background:var(--surface-2); padding:8px 12px; border-radius:10px; margin-bottom:14px;">Editando só esta data — o resto da série continua igual.</div>
     <div class="field"><label class="field-label">Status</label>
@@ -709,6 +726,7 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
       <div class="field"><label class="field-label">Horário final (opcional)</label><input type="time" id="taskEndTime"></div>
     </div>
     <div class="field"><label class="field-label">Categoria</label><div class="cat-select" id="taskCatSelect"></div></div>
+    <div class="field hidden" id="taskSubcatSelectRow"><label class="field-label">Subcategoria</label><div class="cat-select" id="taskSubcatSelect"></div></div>
     <div class="field"><label class="field-label">Prioridade</label><div class="priority-select" id="taskPrioritySelect"></div></div>
     <div class="field"><label class="field-label">Observações</label><textarea id="taskNotes"></textarea></div>
     <div style="display:flex; justify-content:space-between; margin-top:8px;">
@@ -825,12 +843,40 @@ function toast(msg){
    3. CATEGORIES & PRIORITIES (temas fixos do Blooming Era)
 --------------------------------------------------------- */
 const CATEGORIES = {
-  umbanda:    { label:'Umbanda',    color:'#6B4E71', icon:'🕯️' },
-  astrologia: { label:'Astrologia', color:'#7C6A9E', icon:'✨' },
-  rbs:        { label:'RBS',        color:'#5E7F72', icon:'💼' },
-  casa:       { label:'Casa',       color:'#BF9B6F', icon:'🏠' },
-  pessoal:    { label:'Pessoal',    color:'#C08A9A', icon:'🌷' },
-  diversao:   { label:'Diversão',   color:'#C9A34E', icon:'🎉' },
+  umbanda: { label:'Umbanda', color:'#6B4E71', icon:'🕯️', subcategories: {
+    rituais:      {label:'Rituais/Firmezas', color:'#6B4E71'},
+    baralho:      {label:'Baralho Cigano',   color:'#8C6D97'},
+    atendimento:  {label:'Atendimento',      color:'#4C3752'},
+    estudo:       {label:'Estudo',           color:'#AB8FB6'},
+  }},
+  astrologia: { label:'Astrologia', color:'#7C6A9E', icon:'✨', subcategories: {
+    analises: {label:'Análises de mapas', color:'#7C6A9E'},
+    estudo:   {label:'Estudo',            color:'#A79AC2'},
+  }},
+  borogodo: { label:'Borogodó Astral', color:'#4E4370', icon:'🌙' },
+  rbs: { label:'RBS', color:'#5E7F72', icon:'💼', subcategories: {
+    clube:          {label:'Clube do Assinante',  color:'#5E7F72'},
+    petlove:        {label:'Petlove',              color:'#82A794'},
+    aquisicao:      {label:'Aquisição',            color:'#3F5C51'},
+    engajamento:    {label:'Engajamento GZH',      color:'#9FC0AC'},
+    desenvolvimento:{label:'Desenvolvimento',      color:'#2D4A3E'},
+    outros_rbs:     {label:'Outros',               color:'#B7D1C0'},
+  }},
+  casa: { label:'Casa', color:'#BF9B6F', icon:'🏠', subcategories: {
+    contas:       {label:'Contas',       color:'#BF9B6F'},
+    organizacao:  {label:'Organização',  color:'#D8BC90'},
+    limpeza:      {label:'Limpeza',      color:'#96754A'},
+    outros_casa:  {label:'Outros',       color:'#ECDBBE'},
+  }},
+  pessoal: { label:'Pessoal', color:'#C08A9A', icon:'⭐', subcategories: {
+    saude:       {label:'Saúde',       color:'#C08A9A'},
+    autocuidado: {label:'Autocuidado', color:'#DDB2C0'},
+  }},
+  diversao: { label:'Diversão', color:'#C9A34E', icon:'🎉', subcategories: {
+    romance: {label:'Romance', color:'#C9A34E'},
+    amigos:  {label:'Amigos',  color:'#E0C280'},
+    eventos: {label:'Eventos', color:'#9C7B32'},
+  }},
 };
 const PRIORITIES = {
   muito_alta: { label:'Muito Alta', color:'#A24E5C', icon:'🔥' },
@@ -838,6 +884,19 @@ const PRIORITIES = {
   media:      { label:'Média',      color:'#8B8FC9', icon:'➖' },
   baixa:      { label:'Baixa',      color:'#8FA88A', icon:'⬇️' },
 };
+// Cor efetiva de um item (evento ou tarefa): usa a cor da subcategoria quando definida, senão a da categoria-mãe
+function itemColor(item){
+  const cat = CATEGORIES[item.category];
+  if(!cat) return '#999';
+  if(item.subcategory && cat.subcategories && cat.subcategories[item.subcategory]) return cat.subcategories[item.subcategory].color;
+  return cat.color;
+}
+function itemCategoryLabel(item){
+  const cat = CATEGORIES[item.category];
+  if(!cat) return '';
+  const sub = item.subcategory && cat.subcategories && cat.subcategories[item.subcategory];
+  return sub ? `${cat.label} · ${sub.label}` : cat.label;
+}
 
 /* ---------------------------------------------------------
    4. MOON PHASE — cálculo real offline
@@ -1141,6 +1200,58 @@ function starRow(n, color){
   return [1,2,3,4,5].map(i=> `<span style="color:${i<=n?color:'var(--border)'}; font-size:12px;">${i<=n?'★':'☆'}</span>`).join('');
 }
 
+/* ---------------------------------------------------------
+   Progressões Mensais completas (ago/2026 – ago/2027)
+   Secundárias diretas (PD) e conversas/pré-natais (PC), todos os pontos.
+   Sinais deduzidos por casa (os PDFs de origem perdem o glifo do signo na
+   extração de texto; o signo foi confirmado cruzando grau × cúspide da
+   casa indicada em cada tabela, coerente em todas as 8 séries).
+--------------------------------------------------------- */
+const PROG_MONTH_DATES = ['2026-08-15','2026-09-15','2026-10-15','2026-11-15','2026-12-15','2027-01-15','2027-02-15','2027-03-15','2027-04-15','2027-05-15','2027-06-15','2027-07-15','2027-08-15'];
+function buildProgSeries(degs, signs, casas){
+  return PROG_MONTH_DATES.map((date,i)=>({
+    date, mes: MONTH_NAMES[parseKey(date).getMonth()].slice(0,3)+'/'+date.slice(0,4),
+    deg: degs[i], signo: Array.isArray(signs)?signs[i]:signs, casa: Array.isArray(casas)?casas[i]:casas,
+  }));
+}
+const PROGRESSOES_MENSAIS = {
+  sol: {
+    pd: buildProgSeries([53,58,3,8,12,17,22,27,31,36,41,46,50], 'Câncer', 11),
+    pc: buildProgSeries([4,4,4,4,4,4,4,4,4,4,4,4,3], 'Touro', 8),
+  },
+  lua: {
+    pd: buildProgSeries([14,15,16,17,18,19,20,21,22,23,24,25,26], 'Peixes', 7),
+    pc: buildProgSeries([28,27,26,25,23,22,21,20,18,17,16,15,13], 'Libra', 2),
+  },
+  mercurio: {
+    pd: buildProgSeries([1,1,1,1,1,1,1,1,1,1,1,1,1], 'Câncer', '10/11'),
+    pc: buildProgSeries([29,29,28,28,28,28,28,27,27,27,27,27,27], 'Áries', 8),
+  },
+  venus: {
+    pd: buildProgSeries([15,15,15,16,16,16,16,16,16,16,16,16,16], 'Leão', 12),
+    pc: buildProgSeries([28,28,28,28,28,28,28,28,28,28,27,27,27], 'Touro', 9),
+  },
+  marte: {
+    pd: buildProgSeries([26,26,26,26,26,26,26,26,26,26,26,27,27], 'Touro', 9),
+    pc: buildProgSeries([8,8,8,8,7,7,7,7,7,7,7,7,7], 'Áries', '7/8'),
+  },
+  ascendente: {
+    pd: buildProgSeries([11,11,11,12,12,12,12,12,12,12,12,12,12], 'Libra', 2),
+    pc: buildProgSeries([27,27,27,27,27,27,26,26,26,26,26,26,26], 'Câncer', ['11/12','11/12','11/12','11/12','11/12','11/12','11/12','11','11','11','11','11','11']),
+  },
+  mc: {
+    pd: buildProgSeries([8,8,8,8,8,9,9,9,9,9,9,9,9], 'Câncer', 11),
+    pc: buildProgSeries([8,8,8,8,7,7,7,7,7,7,7,7,7], 'Touro', '8/9'),
+  },
+  fortuna: {
+    pd: buildProgSeries([19,20,21,22,23,24,25,26,27,28,29,1,2],
+      ['Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Câncer','Câncer'],
+      [10,10,10,10,10,10,10,10,10,10,10,'10/11','10/11']),
+    pc: buildProgSeries([21,20,18,17,16,15,13,12,11,10,8,7,6], 'Capricórnio', 5),
+  },
+};
+const PROG_POINT_LABELS = {sol:'☉ Sol', lua:'☾ Lua', mercurio:'☿ Mercúrio', venus:'♀ Vênus', marte:'♂ Marte', ascendente:'Ascendente', mc:'Meio do Céu', fortuna:'Roda da Fortuna'};
+
 const ASTRO = {
   natal: {
     sol: '06° Gêmeos — casa 9', lua: '09° Capricórnio — casa 5 (Lua Cheia)',
@@ -1159,20 +1270,14 @@ const ASTRO = {
     asc:'Touro (casa 9 do mapa natal)', mc:'Aquário (casas 6/7 do mapa natal)',
     elementos:{fogo:2, terra:3, ar:9, agua:2},
   },
-  luaProgressada: [
-    {mes:'ago/2026', signo:'Peixes', grau:'14°', casa:7},{mes:'set/2026', signo:'Peixes', grau:'15°', casa:7},
-    {mes:'out/2026', signo:'Peixes', grau:'16°', casa:7},{mes:'nov/2026', signo:'Peixes', grau:'17°', casa:7},
-    {mes:'dez/2026', signo:'Peixes', grau:'18°', casa:7},{mes:'jan/2027', signo:'Peixes', grau:'19°', casa:7},
-    {mes:'fev/2027', signo:'Peixes', grau:'20°', casa:7},{mes:'mar/2027', signo:'Peixes', grau:'21°', casa:7},
-    {mes:'abr/2027', signo:'Peixes', grau:'22°', casa:7},{mes:'mai/2027', signo:'Peixes', grau:'23°', casa:7},
-    {mes:'jun/2027', signo:'Peixes', grau:'24°', casa:7},{mes:'jul/2027', signo:'Peixes', grau:'25°', casa:7},
-  ],
   temasMensais: { 7:'A Lua progredida atravessa Peixes na casa 7 — amadurecimento nos vínculos, sensibilidade em alta e chamado para relações mais espirituais e compassivas.' },
 };
 function getProgressedMoonForMonth(year, month){
-  const idx = (year===2026? month-7 : month+5);
-  const arr = ASTRO.luaProgressada;
-  return arr[Math.max(0, Math.min(arr.length-1, idx))];
+  const key = year + '-' + pad2(month+1);
+  const arr = PROGRESSOES_MENSAIS.lua.pd;
+  const found = arr.find(p=>p.date.startsWith(key));
+  const pick = found || arr[month>=7 ? Math.min(arr.length-1, month-7) : Math.min(arr.length-1, month+5)];
+  return {mes:pick.mes, signo:pick.signo, grau:pick.deg+'°', casa:pick.casa};
 }
 
 /* ---- Calendário astrológico 2026 (transcrito do calendário anexado) ---- */
@@ -1949,11 +2054,52 @@ function eventOccursOn(ev, date){
   if(ev.excluded && ev.excluded.includes(key)) return false;
   const base = parseKey(ev.date);
   if(date < base) return false;
-  if(!ev.recurrence){ return isSameDay(base, date); }
-  if(ev.recurrence==='daily') return true;
-  if(ev.recurrence==='weekdays') return date.getDay()>=1 && date.getDay()<=5;
-  if(ev.recurrence==='weekly') return date.getDay()===base.getDay();
+  const r = ev.recurrence;
+  if(!r){ return isSameDay(base, date); }
+  // formato antigo (string) — mantido por compatibilidade com eventos já salvos
+  if(typeof r === 'string'){
+    if(r==='daily') return true;
+    if(r==='weekdays') return date.getDay()>=1 && date.getDay()<=5;
+    if(r==='weekly') return date.getDay()===base.getDay();
+    return isSameDay(base, date);
+  }
+  // formato novo (objeto): {freq, interval, weekdays}
+  const interval = Math.max(1, Number(r.interval)||1);
+  if(r.freq==='daily'){
+    const diffDays = Math.round((date - base)/86400000);
+    return diffDays>=0 && diffDays % interval === 0;
+  }
+  if(r.freq==='weekly'){
+    const weekdays = (r.weekdays && r.weekdays.length) ? r.weekdays : [base.getDay()];
+    if(!weekdays.includes(date.getDay())) return false;
+    const weeksBetween = Math.round((startOfWeek(date) - startOfWeek(base))/(7*86400000));
+    return weeksBetween>=0 && weeksBetween % interval === 0;
+  }
+  if(r.freq==='monthly'){
+    if(date.getDate()!==base.getDate()) return false;
+    const monthsBetween = (date.getFullYear()-base.getFullYear())*12 + (date.getMonth()-base.getMonth());
+    return monthsBetween>=0 && monthsBetween % interval === 0;
+  }
   return isSameDay(base, date);
+}
+// Descreve a recorrência em linguagem natural, para badges e detalhes
+function describeRecurrence(r){
+  if(!r) return '';
+  if(typeof r === 'string'){
+    if(r==='daily') return 'Todos os dias';
+    if(r==='weekdays') return 'Segunda a sexta';
+    if(r==='weekly') return 'Toda semana';
+    return 'Recorrente';
+  }
+  const interval = Math.max(1, Number(r.interval)||1);
+  if(r.freq==='daily') return interval===1 ? 'Todos os dias' : `A cada ${interval} dias`;
+  if(r.freq==='weekly'){
+    const dayNames = (r.weekdays||[]).map(d=>WEEKDAY_NAMES[d]).join(', ');
+    const freqTxt = interval===1 ? 'Toda semana' : `A cada ${interval} semanas`;
+    return dayNames ? `${freqTxt} (${dayNames})` : freqTxt;
+  }
+  if(r.freq==='monthly') return interval===1 ? 'Todo mês' : `A cada ${interval} meses`;
+  return 'Recorrente';
 }
 function getEventsForDate(date){
   return Store.events().filter(ev=>eventOccursOn(ev, date))
@@ -2029,27 +2175,52 @@ document.getElementById('themeToggleBtn').addEventListener('click', ()=>{
 /* ---------------------------------------------------------
    10. CHIP / PILL HELPERS
 --------------------------------------------------------- */
-function catChip(catKey){
+function catChip(catKey, subKey){
   const c = CATEGORIES[catKey] || CATEGORIES.pessoal;
-  return `<span class="chip" style="background:${c.color}22; color:${c.color}"><span class="dot" style="background:${c.color}"></span>${c.icon} ${c.label}</span>`;
+  const sub = subKey && c.subcategories && c.subcategories[subKey];
+  const color = sub ? sub.color : c.color;
+  const label = sub ? `${c.label} · ${sub.label}` : c.label;
+  return `<span class="chip" style="background:${color}22; color:${color}"><span class="dot" style="background:${color}"></span>${c.icon} ${label}</span>`;
 }
 function prioChip(pKey){
   const p = PRIORITIES[pKey] || PRIORITIES.media;
   return `<span class="chip" style="background:${p.color}22; color:${p.color}">${p.icon} ${p.label}</span>`;
 }
-function buildCatSelect(containerId, selected){
+function buildCatSelect(containerId, selected, subContainerId, selectedSub){
   const el = document.getElementById(containerId);
   el.innerHTML = Object.entries(CATEGORIES).map(([k,c])=>
-    `<button type="button" class="pill-choice ${selected===k?'active':''}" style="color:${c.color}" data-cat="${k}" onclick="pickCat(this,'${containerId}')">${c.icon} ${c.label}</button>`
+    `<button type="button" class="pill-choice ${selected===k?'active':''}" style="color:${c.color}" data-cat="${k}" onclick="pickCategoryPill(this,'${containerId}','${subContainerId||''}')">${c.icon} ${c.label}</button>`
   ).join('');
+  if(subContainerId) buildSubcatSelect(subContainerId, selected, selectedSub);
 }
 function pickCat(btn, containerId){
   btn.parentElement.querySelectorAll('.pill-choice').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 }
+function pickCategoryPill(btn, containerId, subContainerId){
+  pickCat(btn, containerId);
+  if(subContainerId) buildSubcatSelect(subContainerId, btn.dataset.cat, '');
+}
+function buildSubcatSelect(subContainerId, catKey, selectedSub){
+  const el = document.getElementById(subContainerId);
+  if(!el) return;
+  const cat = CATEGORIES[catKey];
+  const subs = cat && cat.subcategories;
+  const row = document.getElementById(subContainerId+'Row');
+  if(!subs){ el.innerHTML=''; if(row) row.classList.add('hidden'); return; }
+  if(row) row.classList.remove('hidden');
+  el.innerHTML = Object.entries(subs).map(([k,s])=>
+    `<button type="button" class="pill-choice ${selectedSub===k?'active':''}" style="color:${s.color}" data-sub="${k}" onclick="pickCat(this,'${subContainerId}')">${s.label}</button>`
+  ).join('');
+}
 function getPickedCat(containerId){
   const active = document.querySelector('#'+containerId+' .pill-choice.active');
   return active ? active.dataset.cat : 'pessoal';
+}
+function getPickedSubcat(subContainerId){
+  if(!subContainerId) return '';
+  const active = document.querySelector('#'+subContainerId+' .pill-choice.active');
+  return active ? active.dataset.sub : '';
 }
 function getPickedText(containerId){
   const active = document.querySelector('#'+containerId+' .pill-choice.active');
@@ -2163,12 +2334,12 @@ function statCard(num,label,emoji){
   return `<div class="stat-card"><div style="font-size:18px;">${emoji}</div><div class="num">${num}</div><div class="label">${label}</div></div>`;
 }
 function agendaRow(ev, occurDate){
-  const c = CATEGORIES[ev.category]||CATEGORIES.pessoal;
+  const barColor = itemColor(ev);
   const od = occurDate || ev.date;
   return `<div class="day-agenda-item" style="cursor:pointer" onclick="openDetailsPanel('${ev.id}','${od}')">
-    <div class="bar" style="background:${c.color}"></div>
+    <div class="bar" style="background:${barColor}"></div>
     <div class="time-col">${ev.start||''}</div>
-    <div class="body"><div class="t">${ev.title}${ev.status==='cancelled'?' <span class="badge-soft" style="color:var(--danger)">cancelado</span>':''}</div><div class="m">${catChip(ev.category)} ${ev.location? '· '+ev.location:''} ${ev.recurrence?'<span class="badge-soft">recorrente</span>':''}</div></div>
+    <div class="body"><div class="t">${ev.title}${ev.status==='cancelled'?' <span class="badge-soft" style="color:var(--danger)">cancelado</span>':''}</div><div class="m">${catChip(ev.category, ev.subcategory)} ${ev.location? '· '+ev.location:''} ${ev.recurrence?`<span class="badge-soft">↻ ${describeRecurrence(ev.recurrence)}</span>`:''}</div></div>
   </div>`;
 }
 function birthdayRow(b){
@@ -2385,8 +2556,18 @@ function renderMonthView(){
     const moon = getMoonPhaseForDate(d);
     const showMoonIcon = moon.name==='Lua Nova' || moon.name==='Lua Cheia' || moon.name==='Quarto Crescente' || moon.name==='Quarto Minguante';
     let pills = '';
-    let items = [...evs.map(e=>({label:e.title, color:CATEGORIES[e.category]?.color||'#999'})), ...bdays.map(b=>({label:'🎂 '+b.name, color:'#D1567E'})), ...tasks.map(t=>({label:'☑ '+t.title, color:PRIORITIES[t.priority]?.color||'#999'}))];
-    items.slice(0,3).forEach(it=> pills += `<div class="month-pill" style="background:${it.color}22; color:${it.color}">${it.label}</div>`);
+    let items = [
+      ...evs.map(e=>({label:e.title, color:itemColor(e), type:'event'})),
+      ...bdays.map(b=>({label:b.name, color:'#D1567E', type:'birthday'})),
+      ...tasks.map(t=>({label:t.title, color:itemColor(t), type:'task'})),
+    ];
+    items.slice(0,3).forEach(it=>{
+      const icon = it.type==='event' ? '📅 ' : it.type==='task' ? '☑ ' : '🎂 ';
+      const style = it.type==='task'
+        ? `background:transparent; border:1.5px dashed ${it.color}; color:${it.color};`
+        : `background:${it.color}22; color:${it.color}; border:1.5px solid transparent;`;
+      pills += `<div class="month-pill" style="${style}">${icon}${it.label}</div>`;
+    });
     if(items.length>3) pills += `<div class="month-pill more">+${items.length-3} mais</div>`;
     html += `<div class="month-cell ${inMonth?'':'other-month'} ${isSameDay(d,today())?'today':''}" onclick="openDayFromMonth(${d.getFullYear()},${d.getMonth()},${d.getDate()})">
       <div class="daynum"><span>${d.getDate()}</span>${showMoonIcon?`<span class="moon-mini">${moon.emoji}</span>`:''}</div>
@@ -2468,6 +2649,33 @@ function renderWeekAstroBlock(){
   return html;
 }
 
+// Calcula colunas para eventos sobrepostos no mesmo dia, lado a lado (como Teams/Google Agenda)
+function layoutOverlappingEvents(evs){
+  evs.sort((a,b)=> a.startMin-b.startMin || a.endMin-b.endMin);
+  let clusters = [], current = [], currentEnd = -1;
+  evs.forEach(ev=>{
+    if(current.length && ev.startMin >= currentEnd){
+      clusters.push(current); current = []; currentEnd = -1;
+    }
+    current.push(ev);
+    currentEnd = Math.max(currentEnd, ev.endMin);
+  });
+  if(current.length) clusters.push(current);
+  clusters.forEach(cluster=>{
+    const colEnds = [];
+    cluster.forEach(ev=>{
+      let placed = false;
+      for(let c=0;c<colEnds.length;c++){
+        if(colEnds[c] <= ev.startMin){ ev.col = c; colEnds[c] = ev.endMin; placed = true; break; }
+      }
+      if(!placed){ ev.col = colEnds.length; colEnds.push(ev.endMin); }
+    });
+    const totalCols = colEnds.length;
+    cluster.forEach(ev=> ev.totalCols = totalCols);
+  });
+  return evs;
+}
+
 function renderWeekView(){
   const ws = startOfWeek(calState.date);
   const days = [...Array(7)].map((_,i)=> addDays(ws,i));
@@ -2490,26 +2698,31 @@ function renderWeekView(){
   const headerEl = document.querySelector('#calWeekView .week-head, #calWeekView .week-corner');
   const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 0;
   days.forEach((d,dayIdx)=>{
-    const evs = getEventsForDate(d).filter(e=>e.status!=='cancelled' && e.start);
-    evs.forEach(ev=>{
+    const rawEvs = getEventsForDate(d).filter(e=>e.status!=='cancelled' && e.start);
+    const evs = rawEvs.map(ev=>{
       const [sh,sm] = ev.start.split(':').map(Number);
       const [eh,em] = (ev.end||ev.start).split(':').map(Number);
       let startMin = sh*60+sm, endMin = eh*60+em;
       if(endMin<=startMin) endMin = startMin+30;
-      const top = headerHeight + ((startMin - startHour*60)/60)*44;
-      const height = Math.max(20,((endMin-startMin)/60)*44);
+      return {...ev, startMin, endMin};
+    });
+    layoutOverlappingEvents(evs);
+    evs.forEach(ev=>{
+      const top = headerHeight + ((ev.startMin - startHour*60)/60)*44;
+      const height = Math.max(20,((ev.endMin-ev.startMin)/60)*44);
       const col = document.querySelector(`.week-col[data-day="${dateKey(d)}"][data-hour="${startHour}"]`);
       if(!col) return;
-      const c = CATEGORIES[ev.category]||CATEGORIES.pessoal;
       const chip = document.createElement('div');
       chip.className='week-event';
-      chip.style.top = top+'px'; chip.style.height = height+'px'; chip.style.background = c.color;
+      chip.style.top = top+'px'; chip.style.height = height+'px'; chip.style.background = itemColor(ev);
       chip.innerHTML = `${ev.title}<small>${ev.start}–${ev.end||''}</small>`;
       chip.onclick = (e)=>{ e.stopPropagation(); openDetailsPanel(ev.id, dateKey(d)); };
       grid.appendChild(chip);
       chip.style.position='absolute';
-      chip.style.left = `calc(52px + ${dayIdx}*((100% - 52px)/7) + 3px)`;
-      chip.style.width = `calc((100% - 52px)/7 - 6px)`;
+      chip.style.right = 'auto';
+      chip.style.zIndex = String(10+ev.col);
+      chip.style.left = `calc(52px + ${dayIdx}*((100% - 52px)/7) + 3px + ${ev.col}*(((100% - 52px)/7 - 6px)/${ev.totalCols}))`;
+      chip.style.width = `calc(((100% - 52px)/7 - 6px)/${ev.totalCols} - 2px)`;
     });
   });
   grid.style.position='relative';
@@ -2716,6 +2929,56 @@ function toggleTaskDone(id){
    13. EVENT MODAL + DETAILS PANEL
 ============================================================ */
 const STATUS_LABELS = {scheduled:'Agendado', done:'Concluído', cancelled:'Cancelado'};
+function populateRecurrenceFields(recurrence, anchorDateStr){
+  let freq='', interval=1, weekdays=[];
+  if(recurrence){
+    if(typeof recurrence==='string'){
+      if(recurrence==='daily'){ freq='daily'; interval=1; }
+      else if(recurrence==='weekdays'){ freq='weekly'; interval=1; weekdays=[1,2,3,4,5]; }
+      else if(recurrence==='weekly'){ freq='weekly'; interval=1; weekdays=[parseKey(anchorDateStr).getDay()]; }
+    } else {
+      freq = recurrence.freq||''; interval = recurrence.interval||1; weekdays = recurrence.weekdays||[];
+    }
+  }
+  document.getElementById('eventRecurrenceFreq').value = freq;
+  document.getElementById('eventRecurrenceInterval').value = interval;
+  const anchor = parseKey(anchorDateStr || dateKey(today()));
+  buildWeekdayPillsFor('eventRecurrenceWeekdays', weekdays.length?weekdays:[anchor.getDay()]);
+  updateRecurrenceUI();
+}
+function buildWeekdayPillsFor(containerId, selectedDays){
+  const el = document.getElementById(containerId);
+  el.innerHTML = WEEKDAY_NAMES.map((n,i)=> `<button type="button" class="pill-choice ${selectedDays.includes(i)?'active':''}" data-day="${i}" onclick="this.classList.toggle('active'); updateRecurrencePreview();">${n}</button>`).join('');
+}
+function updateRecurrenceUI(){
+  const freq = document.getElementById('eventRecurrenceFreq').value;
+  document.getElementById('eventRecurrenceDetail').classList.toggle('hidden', !freq);
+  document.getElementById('eventRecurrenceWeekdaysRow').classList.toggle('hidden', freq!=='weekly');
+  const unitLabel = document.getElementById('eventRecurrenceUnitLabel');
+  if(freq==='daily') unitLabel.textContent = 'dia(s)';
+  else if(freq==='weekly') unitLabel.textContent = 'semana(s)';
+  else if(freq==='monthly') unitLabel.textContent = 'mês(es)';
+  updateRecurrencePreview();
+}
+function updateRecurrencePreview(){
+  const freq = document.getElementById('eventRecurrenceFreq').value;
+  const previewEl = document.getElementById('eventRecurrencePreview');
+  if(!freq){ previewEl.textContent=''; return; }
+  const interval = Math.max(1, Number(document.getElementById('eventRecurrenceInterval').value)||1);
+  const weekdays = [...document.querySelectorAll('#eventRecurrenceWeekdays .pill-choice.active')].map(b=>Number(b.dataset.day));
+  previewEl.textContent = '↻ ' + describeRecurrence({freq, interval, weekdays});
+}
+function buildRecurrenceFromForm(){
+  const freq = document.getElementById('eventRecurrenceFreq').value;
+  if(!freq) return '';
+  const interval = Math.max(1, Number(document.getElementById('eventRecurrenceInterval').value)||1);
+  if(freq==='weekly'){
+    let weekdays = [...document.querySelectorAll('#eventRecurrenceWeekdays .pill-choice.active')].map(b=>Number(b.dataset.day));
+    if(!weekdays.length) weekdays = [parseKey(document.getElementById('eventDate').value).getDay()];
+    return {freq, interval, weekdays};
+  }
+  return {freq, interval};
+}
 function openEventModal(id, prefillDate, prefillTime, occurDate){
   document.getElementById('eventId').dataset.occurDate = occurDate || '';
   const singleMode = !!(id && occurDate);
@@ -2724,7 +2987,7 @@ function openEventModal(id, prefillDate, prefillTime, occurDate){
   document.getElementById('eventDeleteBtn').textContent = singleMode ? 'Excluir este dia' : 'Excluir';
   document.getElementById('eventRecurrenceRow').classList.toggle('hidden', singleMode);
   document.getElementById('eventSingleNote').classList.toggle('hidden', !singleMode);
-  buildCatSelect('eventCatSelect','pessoal');
+  buildCatSelect('eventCatSelect','pessoal','eventSubcatSelect','');
   buildPrioritySelect('eventPrioritySelect','media');
   if(id){
     const ev = Store.events().find(e=>e.id===id);
@@ -2736,11 +2999,11 @@ function openEventModal(id, prefillDate, prefillTime, occurDate){
     document.getElementById('eventEnd').value = ev.end||'';
     document.getElementById('eventLocation').value = ev.location||'';
     document.getElementById('eventPeople').value = ev.people||'';
-    document.getElementById('eventRecurrence').value = ev.recurrence||'';
+    populateRecurrenceFields(ev.recurrence, ev.date);
     document.getElementById('eventStatus').value = ev.status||'scheduled';
     document.getElementById('eventNotes').value = ev.notes||'';
     document.getElementById('eventAttachments').value = ev.attachments||'';
-    buildCatSelect('eventCatSelect', ev.category);
+    buildCatSelect('eventCatSelect', ev.category, 'eventSubcatSelect', ev.subcategory||'');
     buildPrioritySelect('eventPrioritySelect', ev.priority);
   }else{
     document.getElementById('eventId').value = '';
@@ -2751,7 +3014,7 @@ function openEventModal(id, prefillDate, prefillTime, occurDate){
     document.getElementById('eventEnd').value = '';
     document.getElementById('eventLocation').value = '';
     document.getElementById('eventPeople').value = '';
-    document.getElementById('eventRecurrence').value = '';
+    populateRecurrenceFields(null, prefillDate || dateKey(calState.date||today()));
     document.getElementById('eventStatus').value = 'scheduled';
     document.getElementById('eventNotes').value = '';
     document.getElementById('eventAttachments').value = '';
@@ -2771,10 +3034,11 @@ function saveEventFromModal(){
     start:document.getElementById('eventStart').value,
     end:document.getElementById('eventEnd').value,
     category:getPickedCat('eventCatSelect'),
+    subcategory:getPickedSubcat('eventSubcatSelect'),
     priority:getPickedPrio('eventPrioritySelect'),
     location:document.getElementById('eventLocation').value,
     people:document.getElementById('eventPeople').value,
-    recurrence:document.getElementById('eventRecurrence').value,
+    recurrence:buildRecurrenceFromForm(),
     status:document.getElementById('eventStatus').value,
     notes:document.getElementById('eventNotes').value,
     attachments:document.getElementById('eventAttachments').value,
@@ -2875,12 +3139,12 @@ function openDetailsPanel(id, occurDate){
   const isRecurring = !!ev.recurrence;
   document.getElementById('detailsPanel').innerHTML = `
     <div class="panel-head"><h3>Detalhes</h3><button class="panel-close" onclick="closeDetailsPanel()">✕</button></div>
-    <div style="display:flex; gap:8px; margin-bottom:14px;">${catChip(ev.category)}${prioChip(ev.priority)}</div>
+    <div style="display:flex; gap:8px; margin-bottom:14px;">${catChip(ev.category, ev.subcategory)}${prioChip(ev.priority)}</div>
     <h3 style="font-size:20px; margin-bottom:6px;">${ev.title}${ev.status==='cancelled'?' <span class="badge-soft" style="color:var(--danger)">cancelado</span>':''}</h3>
     <p style="font-size:13px; color:var(--text-soft); margin-bottom:16px;">${ev.desc||''}</p>
     <div class="divider"></div>
     <div style="font-size:13px; line-height:2;">
-      <div>🗓️ ${formatBirthdayDate(od)} ${isRecurring?'<span class="badge-soft">recorrente</span>':''}</div>
+      <div>🗓️ ${formatBirthdayDate(od)} ${isRecurring?`<span class="badge-soft">↻ ${describeRecurrence(ev.recurrence)}</span>`:''}</div>
       <div>⏰ ${ev.start||'—'} ${ev.end?'– '+ev.end:''}</div>
       ${ev.location?`<div>📍 ${ev.location}</div>`:''}
       ${ev.people?`<div>👥 ${ev.people}</div>`:''}
@@ -2940,7 +3204,7 @@ function renderTasks(){
         <div class="title ${t.done?'done':''}" style="${t.done?'text-decoration:line-through;color:var(--text-faint)':''}">${t.title}</div>
         <div class="meta">${formatBirthdayDate(t.date)} ${t.time?'· '+t.time+(t.endTime?'–'+t.endTime:''):''}</div>
       </div>
-      ${catChip(t.category)} ${prioChip(t.priority)}
+      ${catChip(t.category, t.subcategory)} ${prioChip(t.priority)}
     </div>
   `).join('') : `<div class="empty-state"><span>📋</span>Nenhuma tarefa encontrada. Que tal criar a primeira?</div>`;
 }
@@ -2955,7 +3219,7 @@ document.getElementById('quickAddBtn').addEventListener('click', ()=>{
 function openTaskModal(id, prefillDate){
   document.getElementById('taskModalTitle').textContent = id? 'Editar tarefa':'Nova tarefa';
   document.getElementById('taskDeleteBtn').classList.toggle('hidden', !id);
-  buildCatSelect('taskCatSelect','pessoal');
+  buildCatSelect('taskCatSelect','pessoal','taskSubcatSelect','');
   buildPrioritySelect('taskPrioritySelect','media');
   if(id){
     const t = Store.tasks().find(x=>x.id===id);
@@ -2965,7 +3229,7 @@ function openTaskModal(id, prefillDate){
     document.getElementById('taskTime').value = t.time||'';
     document.getElementById('taskEndTime').value = t.endTime||'';
     document.getElementById('taskNotes').value = t.notes||'';
-    buildCatSelect('taskCatSelect', t.category);
+    buildCatSelect('taskCatSelect', t.category, 'taskSubcatSelect', t.subcategory||'');
     buildPrioritySelect('taskPrioritySelect', t.priority);
   }else{
     document.getElementById('taskId').value = '';
@@ -2986,7 +3250,7 @@ function saveTaskFromModal(){
   const data = {
     title, date:document.getElementById('taskDate').value, time:document.getElementById('taskTime').value,
     endTime:document.getElementById('taskEndTime').value,
-    category:getPickedCat('taskCatSelect'), priority:getPickedPrio('taskPrioritySelect'),
+    category:getPickedCat('taskCatSelect'), subcategory:getPickedSubcat('taskSubcatSelect'), priority:getPickedPrio('taskPrioritySelect'),
     notes:document.getElementById('taskNotes').value,
   };
   if(id){ const idx = list.findIndex(t=>t.id===id); list[idx] = {...list[idx], ...data}; }
@@ -3211,16 +3475,37 @@ function renderAstrology(){
     </div>
 
     <div class="card card-pad" style="margin-top:18px;">
-      <div class="section-title"><h3>🌙 Progressões — Lua progredida mês a mês (ago/2026 – jul/2027)</h3>${glossaryLink('progressao')}</div>
-      <div style="overflow-x:auto;">
-        <table style="width:100%; border-collapse:collapse; font-size:12px;">
-          <tr style="text-align:left; color:var(--text-soft);"><th style="padding:6px;">Mês</th><th>Signo</th><th>Grau</th><th>Casa</th></tr>
-          ${ASTRO.luaProgressada.map(p=>`<tr style="border-top:1px solid var(--border-soft);"><td style="padding:6px;">${p.mes}</td><td>${p.signo}</td><td>${p.grau}</td><td>${p.casa}</td></tr>`).join('')}
-        </table>
+      <div class="section-title"><h3>🌙 Progressões Mensais — todos os pontos (ago/2026 – ago/2027)</h3>${glossaryLink('progressao')}</div>
+      <p style="font-size:12px; color:var(--text-soft); margin-bottom:12px; line-height:1.6;">Escolha um ponto para ver como ele progride mês a mês — nas progressões <b>secundárias diretas</b> (o método mais usado, olhando para frente) e nas <b>conversas/pré-natais</b> (olhando para o período antes do nascimento, uma técnica complementar).</p>
+      <div class="priority-select" id="progPointSelect">
+        ${Object.entries(PROG_POINT_LABELS).map(([k,label])=>`<button type="button" class="pill-choice ${k==='lua'?'active':''}" data-point="${k}" onclick="showProgPoint(this,'${k}')">${label}</button>`).join('')}
       </div>
-      <p style="font-size:12.5px; color:var(--text-soft); margin-top:12px; line-height:1.6;">${ASTRO.temasMensais[7]}</p>
+      <div id="progTables" style="margin-top:16px;"></div>
     </div>
   `;
+  showProgPoint(null, 'lua');
+}
+function progTableHtml(title, series){
+  return `<div style="margin-bottom:18px;">
+    <p style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-faint); margin-bottom:6px;">${title}</p>
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <tr style="text-align:left; color:var(--text-soft);"><th style="padding:6px;">Mês</th><th>Signo</th><th>Grau</th><th>Casa</th></tr>
+        ${series.map(p=>`<tr style="border-top:1px solid var(--border-soft);"><td style="padding:6px;">${p.mes}</td><td>${p.signo}</td><td>${p.deg}°</td><td>${p.casa}</td></tr>`).join('')}
+      </table>
+    </div>
+  </div>`;
+}
+function showProgPoint(btn, key){
+  if(btn){
+    document.querySelectorAll('#progPointSelect .pill-choice').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const p = PROGRESSOES_MENSAIS[key];
+  const label = PROG_POINT_LABELS[key];
+  document.getElementById('progTables').innerHTML =
+    progTableHtml(`${label} — Secundárias diretas`, p.pd) +
+    progTableHtml(`${label} — Secundárias conversas (pré-natal)`, p.pc);
 }
 function setAstroTab(tab){
   document.querySelectorAll('#astroTabs button').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
@@ -3422,9 +3707,13 @@ function renderSettings(){
   document.getElementById('gcalClientId').value = s.gcalClientId||'';
   document.getElementById('gcalApiKey').value = s.gcalApiKey||'';
   updateGcalStatus();
-  document.getElementById('settingsCategories').innerHTML = Object.entries(CATEGORIES).map(([k,c])=>
-    `<div class="list-item"><span class="dot" style="background:${c.color}; width:14px; height:14px;"></span><div class="content"><div class="title">${c.icon} ${c.label}</div></div><span class="badge-soft" style="color:${c.color}">${c.color}</span></div>`
-  ).join('');
+  document.getElementById('settingsCategories').innerHTML = Object.entries(CATEGORIES).map(([k,c])=>{
+    const subsHtml = c.subcategories ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; padding-left:34px;">${Object.values(c.subcategories).map(s=>`<span class="chip" style="background:${s.color}22; color:${s.color}"><span class="dot" style="background:${s.color}"></span>${s.label}</span>`).join('')}</div>` : '';
+    return `<div style="padding:10px 4px; border-bottom:1px solid var(--border-soft);">
+      <div class="list-item" style="border:none; padding:0;"><span class="dot" style="background:${c.color}; width:14px; height:14px;"></span><div class="content"><div class="title">${c.icon} ${c.label}</div></div><span class="badge-soft" style="color:${c.color}">${c.color}</span></div>
+      ${subsHtml}
+    </div>`;
+  }).join('');
 }
 function updateGcalStatus(){
   const s = Store.settings();
