@@ -879,7 +879,8 @@ function pad2(n){ return String(n).padStart(2,'0'); }
 function dateKey(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
 function parseKey(k){ const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); }
 function addDays(d, n){ const nd = new Date(d); nd.setDate(nd.getDate()+n); return nd; }
-function startOfWeek(d){ const nd = new Date(d); const day = nd.getDay(); nd.setDate(nd.getDate()-day); nd.setHours(0,0,0,0); return nd; }
+function startOfWeek(d){ const nd = new Date(d); const day = nd.getDay(); const diff = day===0 ? -6 : 1-day; nd.setDate(nd.getDate()+diff); nd.setHours(0,0,0,0); return nd; }
+const MONDAY_WEEKDAY_NAMES = ['seg','ter','qua','qui','sex','sáb','dom'];
 function isSameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
 function today(){ const t = new Date(); t.setHours(0,0,0,0); return t; }
 function fmtLong(d){ return WEEKDAY_FULL[d.getDay()].charAt(0).toUpperCase()+WEEKDAY_FULL[d.getDay()].slice(1)+', '+d.getDate()+' de '+MONTH_NAMES[d.getMonth()]; }
@@ -956,11 +957,13 @@ function itemCategoryLabel(item){
 const SPRINT_STATUS = {
   nao_iniciado:         { label:'Não iniciado',          color:'#8B93A8' },
   em_andamento:         { label:'Em andamento',          color:'#5E7F72' },
+  concluido:             { label:'Concluído',             color:'#5B8A6B' },
   pausado:              { label:'Pausado',               color:'#C48A3F' },
   aguardando_definicoes:{ label:'Aguardando definições', color:'#8B8FC9' },
   despriorizado:        { label:'Despriorizado',         color:'#B0A6C2' },
   cancelado:            { label:'Cancelado',             color:'#B25A63' },
 };
+const SPRINT_FADED_STATUSES = ['concluido','despriorizado','cancelado'];
 const SPRINT_PRIORITY = {
   altissima: { label:'Altíssima', color:'#A24E5C', order:0 },
   alta:      { label:'Alta',      color:'#C48A3F', order:1 },
@@ -1048,14 +1051,14 @@ const HOUSE_MEANINGS = {
   6:'Trabalho, rotina, saúde, hábitos e cuidado diário com o corpo.',
   7:'Relacionamentos, parcerias e o outro como espelho — seu Marte e Saturno natais moram aqui.',
   8:'Transformação profunda, intimidade, recursos compartilhados e espiritualidade densa.',
-  9:'Espiritualidade, fé, filosofia e expansão — Umbanda e Astrologia moram aqui simbolicamente; seu Sol natal mora aqui.',
-  10:'Carreira, propósito e reconhecimento — seu Mercúrio natal e o Meio do Céu moram aqui.',
+  9:'Espiritualidade, fé, filosofia e expansão — Umbanda e Astrologia moram aqui simbolicamente.',
+  10:'Carreira, propósito e reconhecimento — seu Sol e Mercúrio natais e o Meio do Céu moram aqui.',
   11:'Amizades, comunidade, grupos espirituais e projetos de futuro — sua Vênus natal mora aqui.',
   12:'Espiritualidade oculta, descanso, cura e processos silenciosos.',
 };
 // Planetas natais e a casa onde residem (calculado a partir dos graus reais do mapa)
 const NATAL_POINTS = [
-  {name:'Sol', sign:'Gêmeos', deg:6, house:9},
+  {name:'Sol', sign:'Gêmeos', deg:6, house:10},
   {name:'Lua', sign:'Capricórnio', deg:9, house:5},
   {name:'Mercúrio', sign:'Gêmeos', deg:28, house:10},
   {name:'Vênus', sign:'Câncer', deg:7, house:11},
@@ -1298,7 +1301,7 @@ const PROGRESSOES_MENSAIS = {
     pc: buildProgSeries([28,27,26,25,23,22,21,20,18,17,16,15,13], 'Libra', 2),
   },
   mercurio: {
-    pd: buildProgSeries([1,1,1,1,1,1,1,1,1,1,1,1,1], 'Câncer', '10/11'),
+    pd: buildProgSeries([1,1,1,1,1,1,1,1,1,1,1,1,1], 'Câncer', 11),
     pc: buildProgSeries([29,29,28,28,28,28,28,27,27,27,27,27,27], 'Áries', 8),
   },
   venus: {
@@ -1307,20 +1310,20 @@ const PROGRESSOES_MENSAIS = {
   },
   marte: {
     pd: buildProgSeries([26,26,26,26,26,26,26,26,26,26,26,27,27], 'Touro', 9),
-    pc: buildProgSeries([8,8,8,8,7,7,7,7,7,7,7,7,7], 'Áries', '7/8'),
+    pc: buildProgSeries([8,8,8,8,7,7,7,7,7,7,7,7,7], 'Áries', 8),
   },
   ascendente: {
     pd: buildProgSeries([11,11,11,12,12,12,12,12,12,12,12,12,12], 'Libra', 2),
-    pc: buildProgSeries([27,27,27,27,27,27,26,26,26,26,26,26,26], 'Câncer', ['11/12','11/12','11/12','11/12','11/12','11/12','11/12','11','11','11','11','11','11']),
+    pc: buildProgSeries([27,27,27,27,27,27,26,26,26,26,26,26,26], 'Câncer', [12,12,12,12,12,12,12,11,11,11,11,11,11]),
   },
   mc: {
     pd: buildProgSeries([8,8,8,8,8,9,9,9,9,9,9,9,9], 'Câncer', 11),
-    pc: buildProgSeries([8,8,8,8,7,7,7,7,7,7,7,7,7], 'Touro', '8/9'),
+    pc: buildProgSeries([8,8,8,8,7,7,7,7,7,7,7,7,7], 'Touro', 9),
   },
   fortuna: {
     pd: buildProgSeries([19,20,21,22,23,24,25,26,27,28,29,1,2],
       ['Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Gêmeos','Câncer','Câncer'],
-      [10,10,10,10,10,10,10,10,10,10,10,'10/11','10/11']),
+      [10,10,10,10,10,10,10,10,10,10,10,11,11]),
     pc: buildProgSeries([21,20,18,17,16,15,13,12,11,10,8,7,6], 'Capricórnio', 5),
   },
 };
@@ -1328,7 +1331,7 @@ const PROG_POINT_LABELS = {sol:'☉ Sol', lua:'☾ Lua', mercurio:'☿ Mercúrio
 
 const ASTRO = {
   natal: {
-    sol: '06° Gêmeos — casa 9', lua: '09° Capricórnio — casa 5 (Lua Cheia)',
+    sol: '06° Gêmeos — casa 10', lua: '09° Capricórnio — casa 5 (Lua Cheia)',
     asc: '02° Virgem', mc: '09° Gêmeos — casa 10',
     mercurio:'28° Gêmeos — casa 10', venus:'07° Câncer — casa 11', marte:'02° Áries — casa 7',
     jupiter:'06° Escorpião R — casa 2', saturno:'11° Peixes — casa 7', urano:'26° Capricórnio R — casa 5',
@@ -1340,8 +1343,8 @@ const ASTRO = {
   },
   revolucaoSolar2026: {
     data:'27/05/2026', local:'Araguari/MG',
-    sol:'Gêmeos, casa 1 da RS', lua:'Libra, casas 5/6 da RS',
-    asc:'Touro (casa 9 do mapa natal)', mc:'Aquário (casas 6/7 do mapa natal)',
+    sol:'Gêmeos, casa 1 da RS', lua:'Libra, casa 6 da RS',
+    asc:'Touro (casa 9 do mapa natal)', mc:'Aquário (casa 7 do mapa natal)',
     elementos:{fogo:2, terra:3, ar:9, agua:2},
   },
   temasMensais: { 7:'A Lua progredida atravessa Peixes na casa 7 — amadurecimento nos vínculos, sensibilidade em alta e chamado para relações mais espirituais e compassivas.' },
@@ -2005,7 +2008,7 @@ const GLOSSARY = {
     exemplo:'Sua Revolução Solar 2026 tem o Sol na casa 1 — um ano de autoafirmação e novos começos.',
     influencia:'É sempre lida em conjunto com o mapa natal, nunca isoladamente.',
     comoInterpretar:'Observe a casa do Sol, da Lua, o Ascendente e o Meio do Céu da revolução, e compare com o mapa natal.',
-    comoAparece:'Sua Revolução Solar 2026 (27/05/2026, Araguari/MG) tem Sol em Gêmeos na casa 1, Lua em Libra nas casas 5/6, Ascendente em Touro (casa 9 natal) e Meio do Céu em Aquário (casas 6/7 natal).',
+    comoAparece:'Sua Revolução Solar 2026 (27/05/2026, Araguari/MG) tem Sol em Gêmeos na casa 1, Lua em Libra na casa 6, Ascendente em Touro (casa 9 natal) e Meio do Céu em Aquário na casa 7 (natal).',
   },
   elemento: { titulo:'O que são os Elementos?',
     definicao:'Os 12 signos se dividem em 4 elementos: Fogo (ação), Terra (matéria), Ar (mente) e Água (emoção).',
@@ -2034,7 +2037,7 @@ const GLOSSARY = {
 };
 Object.keys(PLANET_INFO).forEach(p=>{
   const info = PLANET_INFO[p];
-  const np = NATAL_POINTS.find(n=>n.name===p) || (p==='Sol'?{sign:'Gêmeos',deg:6,house:9}: p==='Lua'?{sign:'Capricórnio',deg:9,house:5}:null);
+  const np = NATAL_POINTS.find(n=>n.name===p) || (p==='Sol'?{sign:'Gêmeos',deg:6,house:10}: p==='Lua'?{sign:'Capricórnio',deg:9,house:5}:null);
   GLOSSARY['planeta_'+p] = {
     titulo:`${p} — o que representa?`,
     definicao:`${p} representa ${info.fn}.`,
@@ -2458,7 +2461,7 @@ function renderHome(){
   // mini week calendar
   const ws = startOfWeek(t);
   let mc = '<div class="mini-cal">';
-  WEEKDAY_NAMES.forEach(n=> mc += `<div class="mc-head">${n}</div>`);
+  MONDAY_WEEKDAY_NAMES.forEach(n=> mc += `<div class="mc-head">${n}</div>`);
   for(let i=0;i<7;i++){
     const d = addDays(ws,i);
     const hasEv = getEventsForDate(d).length>0;
@@ -2565,7 +2568,7 @@ function renderMonthView(){
   const y = calState.date.getFullYear(), m = calState.date.getMonth();
   const first = new Date(y,m,1);
   const last = new Date(y,m+1,0);
-  const gridStart = addDays(first, -first.getDay());
+  const gridStart = startOfWeek(first);
   const pm = getProgressedMoonForMonth(y,m);
   const ma = getMonthAstro(y,m);
   const monthLabel = MONTH_NAMES[m];
@@ -2683,7 +2686,7 @@ function renderMonthView(){
   document.getElementById('calMonthSummary').innerHTML = personalHtml + summary + housesHtml + bestDaysHtml + adviceHtml + aspectsHtml;
 
   let html = '<div class="month-grid">';
-  WEEKDAY_NAMES.forEach(n=> html += `<div class="month-weekday">${n}</div>`);
+  MONDAY_WEEKDAY_NAMES.forEach(n=> html += `<div class="month-weekday">${n}</div>`);
   for(let i=0;i<42;i++){
     const d = addDays(gridStart,i);
     const inMonth = d.getMonth()===m;
@@ -2828,7 +2831,7 @@ function renderWeekView(){
       body += `<div class="week-col" data-day="${dateKey(d)}" data-hour="${h}" onclick="quickAddAtSlot('${dateKey(d)}',${h})"></div>`;
     });
   }
-  document.getElementById('calWeekView').innerHTML = astroHtml + `<div class="week-grid">${head}${body}</div>` + sprintTasksCardHtml();
+  document.getElementById('calWeekView').innerHTML = astroHtml + `<div class="week-grid">${head}${body}</div>` + sprintTasksCardHtml({start:ws, end:addDays(ws,6)});
 
   // place events absolutely
   const grid = document.querySelector('#calWeekView .week-grid');
@@ -2896,7 +2899,7 @@ function renderDayView(){
       const done = !!logs[h.id+'_'+key];
       return `<div class="checklist-row"><button class="check-circle ${done?'done':''}" onclick="toggleHabit('${h.id}','${key}')">${done?'<svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':''}</button><span class="txt ${done?'done':''}">${h.icon} ${h.name}</span>${h.time?`<span class="badge-soft">${h.time}</span>`:''}<span class="streak">${habitStreak(h.id)}d</span></div>`;
     }).join('') : `<div class="empty-state"><span>🌱</span>Nenhum hábito programado.</div>`}
-  </div>${sprintTasksCardHtml()}`;
+  </div>${sprintTasksCardHtml(d)}`;
 
   const da = getDayAstro(d);
   const touchedHousesHtml = da.touchedHouses.map(h=>{
@@ -3607,7 +3610,7 @@ function renderAstrology(){
           <div class="planet-row"><span class="p-name">☾ Lua</span><span class="p-pos">${sr.lua}</span></div>
           <div class="planet-row"><span class="p-name">Ascendente</span><span class="p-pos">${sr.asc}</span></div>
           <div class="planet-row"><span class="p-name">Meio do Céu</span><span class="p-pos">${sr.mc}</span></div>
-          <p style="font-size:12px; color:var(--text-soft); margin-top:10px; line-height:1.6;">Um ano com Sol na casa 1 da Revolução Solar marca um ciclo de autoafirmação e novos começos — momento de se colocar mais no centro da própria vida. Lua em Libra nas casas 5/6 destaca criatividade, prazer e cuidado com a rotina e o corpo. ${glossaryLink('revolucao_solar')}</p>
+          <p style="font-size:12px; color:var(--text-soft); margin-top:10px; line-height:1.6;">Um ano com Sol na casa 1 da Revolução Solar marca um ciclo de autoafirmação e novos começos — momento de se colocar mais no centro da própria vida. Lua em Libra na casa 6 destaca rotina, saúde e cuidado com o corpo. ${glossaryLink('revolucao_solar')}</p>
         </div>
       </div>
     </div>
@@ -3849,6 +3852,25 @@ function allSprintNames(){
     return a.localeCompare(b);
   });
 }
+// Lê o intervalo de datas embutido no nome da sprint (ex: "Iteração 2 - 27/07 a 07/08" ou "Sprint 14 (07/07–18/07)")
+function parseSprintDateRange(sprintName){
+  const matches = sprintName.match(/(\d{1,2})\/(\d{1,2})/g);
+  if(!matches || matches.length<2) return null;
+  const [d1,m1] = matches[0].split('/').map(Number);
+  const [d2,m2] = matches[1].split('/').map(Number);
+  const year = 2026;
+  const start = new Date(year, m1-1, d1, 0,0,0);
+  const end = new Date(m2<m1 ? year+1 : year, m2-1, d2, 23,59,59);
+  return {start, end};
+}
+// Quais sprints (por data) cobrem o intervalo [rangeStart, rangeEnd] — pode ser mais de uma se a semana cruzar duas sprints
+function sprintsForDateRange(rangeStart, rangeEnd){
+  return allSprintNames().filter(name=>{
+    const r = parseSprintDateRange(name);
+    if(!r) return false;
+    return r.start <= rangeEnd && r.end >= rangeStart;
+  });
+}
 function currentSprintName(){ return Store.settings().currentSprint || ''; }
 function setCurrentSprint(name){
   const s = Store.settings(); s.currentSprint = name; Store.saveSettings(s);
@@ -3866,6 +3888,14 @@ function sprintTasksFor(sprintName){
   return Store.sprintTasks().filter(t=>t.sprint===sprintName)
     .sort((a,b)=> (SPRINT_PRIORITY[a.priority]?.order ?? 9) - (SPRINT_PRIORITY[b.priority]?.order ?? 9));
 }
+// Linha de task reutilizável, com "perda de evidência" visual para concluído/despriorizado/cancelado
+function sprintTaskRowHtml(t){
+  const faded = SPRINT_FADED_STATUSES.includes(t.status);
+  return `<div class="list-item" style="cursor:pointer; ${faded?'opacity:.5;':''}" onclick="openSprintTaskModal('${t.id}')">
+    <div class="content"><div class="title" style="${faded?'text-decoration:line-through;':''}">${t.title}${t.marco?` <span class="badge-soft">🏁 ${t.marco}</span>`:''}</div><div class="meta">👤 ${t.responsavel||'—'}</div></div>
+    <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">${sprintPriorityChip(t.priority)}${sprintStatusChip(t.status)}</div>
+  </div>`;
+}
 function renderSprints(){
   const names = allSprintNames();
   if(!window._sprintTabSelected || !names.includes(window._sprintTabSelected)){
@@ -3879,10 +3909,12 @@ function renderSprints(){
 
   if(!sel){ document.getElementById('sprintCurrentBar').innerHTML=''; document.getElementById('sprintBoard').innerHTML=''; return; }
 
+  const range = parseSprintDateRange(sel);
+  const rangeTxt = range ? `${pad2(range.start.getDate())}/${pad2(range.start.getMonth()+1)} a ${pad2(range.end.getDate())}/${pad2(range.end.getMonth()+1)}` : null;
   document.getElementById('sprintCurrentBar').innerHTML = `
-    <div class="gcal-status" style="justify-content:space-between;">
-      <span>${sel===currentSprintName() ? '⭐ Esta é a sua sprint atual — aparece em "Tarefas da sprint" no Dia e na Semana.' : 'Esta não é a sprint marcada como atual.'}</span>
-      ${sel!==currentSprintName() ? `<button class="btn btn-soft btn-sm" onclick="setCurrentSprint('${sel.replace(/'/g,"\\'")}')">Marcar como atual</button>` : ''}
+    <div class="gcal-status" style="justify-content:space-between; flex-wrap:wrap; gap:8px;">
+      <span>${range ? `📅 ${rangeTxt} — aparece automaticamente no Dia e na Semana durante esse período.` : '⚠️ Não consegui identificar as datas desta sprint pelo nome (formato esperado: "... DD/MM a DD/MM").'} ${sel===currentSprintName()?' · ⭐ marcada como atual':''}</span>
+      ${sel!==currentSprintName() ? `<button class="btn btn-soft btn-sm" onclick="setCurrentSprint('${sel.replace(/'/g,"\\'")}')">Marcar como atual (reserva)</button>` : ''}
     </div>`;
 
   const tasks = sprintTasksFor(sel);
@@ -3903,15 +3935,7 @@ function renderSprints(){
     html += `<div class="card card-pad" style="margin-bottom:16px;"><h3 style="font-size:16px; margin-bottom:12px;">📦 ${macro}</h3>`;
     Object.entries(epicos).forEach(([epico, list])=>{
       html += `<div style="margin-bottom:14px;"><p style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-faint); margin-bottom:8px;">🏳️ ${epico}</p>`;
-      list.forEach(t=>{
-        html += `<div class="list-item" style="cursor:pointer; align-items:flex-start;" onclick="openSprintTaskModal('${t.id}')">
-          <div class="content">
-            <div class="title">${t.title}${t.marco?` <span class="badge-soft">🏁 ${t.marco}</span>`:''}</div>
-            <div class="meta">👤 ${t.responsavel||'—'}</div>
-            <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">${sprintPriorityChip(t.priority)}${sprintStatusChip(t.status)}</div>
-          </div>
-        </div>`;
-      });
+      list.forEach(t=> html += sprintTaskRowHtml(t));
       html += `</div>`;
     });
     html += `</div>`;
@@ -3995,16 +4019,43 @@ function deleteSprintTaskFromModal(){
   if(currentView==='calendar') renderCalendar();
 }
 // Card "Tarefas da sprint" reutilizado no Dia e na Semana — mostra a sprint marcada como atual
-function sprintTasksCardHtml(){
-  const sprintName = currentSprintName();
-  if(!sprintName) return '';
-  const tasks = sprintTasksFor(sprintName).filter(t=>t.status!=='cancelado');
+function sprintTasksCardHtml(dateOrRange){
+  const rangeStart = dateOrRange instanceof Date ? dateOrRange : dateOrRange.start;
+  const rangeEnd = dateOrRange instanceof Date ? dateOrRange : dateOrRange.end;
+  let sprintNames = sprintsForDateRange(rangeStart, rangeEnd);
+  // fallback: se nenhuma sprint com data reconhecível cobre o período, usa a sprint marcada manualmente como atual
+  if(!sprintNames.length && currentSprintName()) sprintNames = [currentSprintName()];
+  if(!sprintNames.length) return '';
+
+  const sectionsHtml = sprintNames.map(sprintName=>{
+    const tasks = sprintTasksFor(sprintName);
+    if(!tasks.length) return '';
+    const macros = {};
+    tasks.forEach(t=>{
+      const macro = t.macro || 'Sem macro definido';
+      const epico = t.epico || 'Sem épico definido';
+      macros[macro] = macros[macro] || {};
+      macros[macro][epico] = macros[macro][epico] || [];
+      macros[macro][epico].push(t);
+    });
+    let inner = sprintNames.length>1 ? `<p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--primary-deep); margin:14px 0 6px;">🚀 ${sprintName}</p>` : '';
+    Object.entries(macros).forEach(([macro,epicos])=>{
+      inner += `<p style="font-size:12px; font-weight:700; margin:10px 0 6px;">📦 ${macro}</p>`;
+      Object.entries(epicos).forEach(([epico,list])=>{
+        inner += `<p style="font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:var(--text-faint); margin:8px 0 4px 6px;">🏳️ ${epico}</p>`;
+        list.forEach(t=> inner += `<div style="margin-left:6px;">${sprintTaskRowHtml(t)}</div>`);
+      });
+    });
+    return inner;
+  }).join('');
+
+  const body = sectionsHtml || `<div class="empty-state"><span>🚀</span>Nenhuma task nas sprints deste período.</div>`;
+  const badgeText = sprintNames.length>1 ? `${sprintNames.length} sprints nesta semana` : sprintNames[0];
   return `<div class="card card-pad" style="margin-top:18px;">
-    <div class="section-title"><h3>🚀 Tarefas da sprint</h3><span class="badge-soft">${sprintName}</span></div>
-    ${tasks.length ? tasks.map(t=>`<div class="list-item" style="cursor:pointer" onclick="openSprintTaskModal('${t.id}')">
-      <div class="content"><div class="title">${t.title}${t.marco?` <span class="badge-soft">🏁 ${t.marco}</span>`:''}</div><div class="meta">${t.macro?t.macro+' · ':''}${t.epico||''} · 👤 ${t.responsavel||'—'}</div></div>
-      <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">${sprintPriorityChip(t.priority)}${sprintStatusChip(t.status)}</div>
-    </div>`).join('') : `<div class="empty-state"><span>🚀</span>Nenhuma task ativa nesta sprint.</div>`}
+    <div class="section-title"><h3>🚀 Tarefas da sprint</h3><span class="badge-soft">${badgeText}</span></div>
+    ${body}
+    <div class="divider"></div>
+    <button class="btn btn-ghost btn-sm" onclick="switchView('sprints')">Ver todas as sprints →</button>
   </div>`;
 }
 
