@@ -1036,40 +1036,41 @@ function toast(msg){
    3. CATEGORIES & PRIORITIES (temas fixos do Blooming Era)
 --------------------------------------------------------- */
 const CATEGORIES = {
-  umbanda: { label:'Umbanda', color:'#6B4E71', icon:'🕯️', subcategories: {
-    rituais:      {label:'Rituais/Firmezas', color:'#6B4E71'},
-    baralho:      {label:'Baralho Cigano',   color:'#8C6D97'},
-    atendimento:  {label:'Atendimento',      color:'#4C3752'},
-    estudo:       {label:'Estudo',           color:'#AB8FB6'},
+  umbanda: { label:'Umbanda', color:'#6B4E71', icon:'🔱', subcategories: {
+    rituais:      {label:'Rituais/Firmezas', color:'#6B4E71', icon:'🧙🏻‍♀️'},
+    baralho:      {label:'Baralho Cigano',   color:'#8C6D97', icon:'💃🏻'},
+    atendimento:  {label:'Atendimento',      color:'#4C3752', icon:'🔮'},
+    estudo:       {label:'Estudo',           color:'#AB8FB6', icon:'📚'},
   }},
   astrologia: { label:'Astrologia', color:'#7C6A9E', icon:'✨', subcategories: {
-    analises: {label:'Análises de mapas', color:'#7C6A9E'},
-    estudo:   {label:'Estudo',            color:'#A79AC2'},
+    analises: {label:'Análise de mapas', color:'#7C6A9E', icon:'🕵🏻‍♀️'},
+    estudo:   {label:'Estudo',           color:'#A79AC2', icon:'📖'},
   }},
-  borogodo: { label:'Borogodó Astral', color:'#4E4370', icon:'🌙' },
-  rbs: { label:'RBS', color:'#5E7F72', icon:'💼', subcategories: {
-    clube:          {label:'Clube do Assinante',  color:'#5E7F72'},
-    petlove:        {label:'Petlove',              color:'#82A794'},
-    aquisicao:      {label:'Aquisição',            color:'#3F5C51'},
-    engajamento:    {label:'Engajamento GZH',      color:'#9FC0AC'},
-    desenvolvimento:{label:'Desenvolvimento',      color:'#2D4A3E'},
-    outros_rbs:     {label:'Outros',               color:'#B7D1C0'},
+  rbs: { label:'RBS', color:'#5E7F72', icon:'👩🏻‍💻', subcategories: {
+    clube:         {label:'Clube do Assinante',        color:'#5E7F72', icon:'💜'},
+    petlove:       {label:'Petlove',                   color:'#82A794', icon:'🐾'},
+    gzh:           {label:'GZH',                       color:'#9FC0AC', icon:'🗞️'},
+    licenciamento: {label:'Licenciamento de camisetas', color:'#3F5C51', icon:'👚'},
+    carreira:      {label:'Desenvolvimento de carreira',color:'#2D4A3E', icon:'🧬'},
   }},
-  casa: { label:'Casa', color:'#BF9B6F', icon:'🏠', subcategories: {
-    contas:       {label:'Contas',       color:'#BF9B6F'},
-    organizacao:  {label:'Organização',  color:'#D8BC90'},
-    limpeza:      {label:'Limpeza',      color:'#96754A'},
-    outros_casa:  {label:'Outros',       color:'#ECDBBE'},
+  hobbies: { label:'Hobbies', color:'#B08968', icon:'👑' },
+  autocuidado: { label:'Autocuidado', color:'#CC9CB3', icon:'💆🏻‍♀️' },
+  saude: { label:'Saúde', color:'#8AA9C4', icon:'🫀', subcategories: {
+    medico:           {label:'Médico/exames',    color:'#8AA9C4', icon:'🏥'},
+    atividade_fisica: {label:'Atividade física', color:'#5F7F9B', icon:'🏋🏻‍♀️'},
   }},
-  pessoal: { label:'Pessoal', color:'#C08A9A', icon:'⭐', subcategories: {
-    saude:       {label:'Saúde',       color:'#C08A9A'},
-    autocuidado: {label:'Autocuidado', color:'#DDB2C0'},
+  diversao: { label:'Diversão', color:'#C9A34E', icon:'🍿', subcategories: {
+    familia: {label:'Família', color:'#C9A34E', icon:'💖'},
+    amigos:  {label:'Amigos',  color:'#E0C280', icon:'👯🏻‍♀️'},
+    eventos: {label:'Eventos', color:'#9C7B32', icon:'🎉'},
   }},
-  diversao: { label:'Diversão', color:'#C9A34E', icon:'🎉', subcategories: {
-    romance: {label:'Romance', color:'#C9A34E'},
-    amigos:  {label:'Amigos',  color:'#E0C280'},
-    eventos: {label:'Eventos', color:'#9C7B32'},
+  casa: { label:'Casa', color:'#BF9B6F', icon:'🏡', subcategories: {
+    cozinhar:    {label:'Cozinhar',    color:'#BF9B6F', icon:'👩🏻‍🍳'},
+    limpeza:     {label:'Limpeza',     color:'#96754A', icon:'🧹'},
+    organizacao: {label:'Organização', color:'#D8BC90', icon:'🗂️'},
+    financas:    {label:'Finanças',    color:'#7A5A38', icon:'💸'},
   }},
+  namoro: { label:'Namoro', color:'#B5677A', icon:'👩‍❤️‍💋‍👨' },
 };
 const PRIORITIES = {
   muito_alta: { label:'Muito Alta', color:'#A24E5C', icon:'🔥' },
@@ -2084,7 +2085,7 @@ function correlateAgenda(date, touchedHouses){
     if((ev.category==='astrologia' || ev.category==='umbanda') && touchedHouses.includes(9)){
       notes.push(`✨ Seu compromisso "${ev.title}" cai num dia com a casa 9 (espiritualidade e estudo) ativada — ótimo momento para aprofundar.`);
     }
-    if(ev.category==='pessoal' && ev.title.toLowerCase().includes('terapia') && touchedHouses.some(h=>[4,8,12].includes(h))){
+    if(ev.category==='autocuidado' && ev.title.toLowerCase().includes('terapia') && touchedHouses.some(h=>[4,8,12].includes(h))){
       notes.push(`💬 Sua Terapia hoje coincide com casas emocionais ativas (${touchedHouses.filter(h=>[4,8,12].includes(h)).join(', ')}) — bom momento para processar o que estiver vindo à tona.`);
     }
     if(ev.category==='diversao' && touchedHouses.includes(5)){
@@ -2245,9 +2246,9 @@ function seedDefaults(){
   if(DB.get('seeded', false)) return;
   const evs = [];
   const baseDate = '2026-08-03'; // referência da primeira ocorrência (segunda-feira)
-  evs.push({id:uid(), title:'Academia', desc:'Treino de força', date:baseDate, start:'07:00', end:'08:30', category:'pessoal', priority:'media', location:'', people:'', recurrence:'weekdays', status:'scheduled', notes:'', attachments:'', excluded:[]});
-  evs.push({id:uid(), title:'Almoço', desc:'', date:baseDate, start:'12:00', end:'14:00', category:'pessoal', priority:'baixa', location:'', people:'', recurrence:'weekdays', status:'scheduled', notes:'Horário flexível — mover quando necessário', attachments:'', excluded:[]});
-  evs.push({id:uid(), title:'Terapia', desc:'', date:'2026-08-03', start:'18:00', end:'19:00', category:'pessoal', priority:'alta', location:'', people:'', recurrence:'weekly', status:'scheduled', notes:'', attachments:'', excluded:[]});
+  evs.push({id:uid(), title:'Academia', desc:'Treino de força', date:baseDate, start:'07:00', end:'08:30', category:'saude', subcategory:'atividade_fisica', priority:'media', location:'', people:'', recurrence:'weekdays', status:'scheduled', notes:'', attachments:'', excluded:[]});
+  evs.push({id:uid(), title:'Almoço', desc:'', date:baseDate, start:'12:00', end:'14:00', category:'autocuidado', priority:'baixa', location:'', people:'', recurrence:'weekdays', status:'scheduled', notes:'Horário flexível — mover quando necessário', attachments:'', excluded:[]});
+  evs.push({id:uid(), title:'Terapia', desc:'', date:'2026-08-03', start:'18:00', end:'19:00', category:'autocuidado', priority:'alta', location:'', people:'', recurrence:'weekly', status:'scheduled', notes:'', attachments:'', excluded:[]});
   evs.push({id:uid(), title:'RPG', desc:'', date:'2026-08-04', start:'19:00', end:'22:00', category:'diversao', priority:'media', location:'', people:'', recurrence:'weekly', status:'scheduled', notes:'', attachments:'', excluded:[]});
   Store.saveEvents(evs);
 
@@ -2456,11 +2457,12 @@ document.getElementById('themeToggleBtn').addEventListener('click', ()=>{
    10. CHIP / PILL HELPERS
 --------------------------------------------------------- */
 function catChip(catKey, subKey){
-  const c = CATEGORIES[catKey] || CATEGORIES.pessoal;
+  const c = CATEGORIES[catKey] || CATEGORIES.autocuidado;
   const sub = subKey && c.subcategories && c.subcategories[subKey];
   const color = sub ? sub.color : c.color;
+  const icon = sub ? (sub.icon||c.icon) : c.icon;
   const label = sub ? `${c.label} · ${sub.label}` : c.label;
-  return `<span class="chip" style="background:${color}22; color:${color}"><span class="dot" style="background:${color}"></span>${c.icon} ${label}</span>`;
+  return `<span class="chip" style="background:${color}22; color:${color}"><span class="dot" style="background:${color}"></span>${icon} ${label}</span>`;
 }
 function prioChip(pKey){
   const p = PRIORITIES[pKey] || PRIORITIES.media;
@@ -2490,12 +2492,12 @@ function buildSubcatSelect(subContainerId, catKey, selectedSub){
   if(!subs){ el.innerHTML=''; if(row) row.classList.add('hidden'); return; }
   if(row) row.classList.remove('hidden');
   el.innerHTML = Object.entries(subs).map(([k,s])=>
-    `<button type="button" class="pill-choice ${selectedSub===k?'active':''}" style="color:${s.color}" data-sub="${k}" onclick="pickCat(this,'${subContainerId}')">${s.label}</button>`
+    `<button type="button" class="pill-choice ${selectedSub===k?'active':''}" style="color:${s.color}" data-sub="${k}" onclick="pickCat(this,'${subContainerId}')">${s.icon||''} ${s.label}</button>`
   ).join('');
 }
 function getPickedCat(containerId){
   const active = document.querySelector('#'+containerId+' .pill-choice.active');
-  return active ? active.dataset.cat : 'pessoal';
+  return active ? active.dataset.cat : 'autocuidado';
 }
 function getPickedSubcat(subContainerId){
   if(!subContainerId) return '';
@@ -3267,7 +3269,7 @@ function openEventModal(id, prefillDate, prefillTime, occurDate){
   document.getElementById('eventDeleteBtn').textContent = singleMode ? 'Excluir este dia' : 'Excluir';
   document.getElementById('eventRecurrenceRow').classList.toggle('hidden', singleMode);
   document.getElementById('eventSingleNote').classList.toggle('hidden', !singleMode);
-  buildCatSelect('eventCatSelect','pessoal','eventSubcatSelect','');
+  buildCatSelect('eventCatSelect','autocuidado','eventSubcatSelect','');
   buildPrioritySelect('eventPrioritySelect','media');
   if(id){
     const ev = Store.events().find(e=>e.id===id);
@@ -3500,7 +3502,7 @@ document.getElementById('quickAddBtn').addEventListener('click', ()=>{
 function openTaskModal(id, prefillDate){
   document.getElementById('taskModalTitle').textContent = id? 'Editar tarefa':'Nova tarefa';
   document.getElementById('taskDeleteBtn').classList.toggle('hidden', !id);
-  buildCatSelect('taskCatSelect','pessoal','taskSubcatSelect','');
+  buildCatSelect('taskCatSelect','autocuidado','taskSubcatSelect','');
   buildPrioritySelect('taskPrioritySelect','media');
   if(id){
     const t = Store.tasks().find(x=>x.id===id);
@@ -4661,7 +4663,7 @@ function renderSettings(){
   document.getElementById('cloudSyncSecret').value = cc.secret||'';
   updateCloudSyncStatus();
   document.getElementById('settingsCategories').innerHTML = Object.entries(CATEGORIES).map(([k,c])=>{
-    const subsHtml = c.subcategories ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; padding-left:34px;">${Object.values(c.subcategories).map(s=>`<span class="chip" style="background:${s.color}22; color:${s.color}"><span class="dot" style="background:${s.color}"></span>${s.label}</span>`).join('')}</div>` : '';
+    const subsHtml = c.subcategories ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; padding-left:34px;">${Object.values(c.subcategories).map(s=>`<span class="chip" style="background:${s.color}22; color:${s.color}"><span class="dot" style="background:${s.color}"></span>${s.icon||''} ${s.label}</span>`).join('')}</div>` : '';
     return `<div style="padding:10px 4px; border-bottom:1px solid var(--border-soft);">
       <div class="list-item" style="border:none; padding:0;"><span class="dot" style="background:${c.color}; width:14px; height:14px;"></span><div class="content"><div class="title">${c.icon} ${c.label}</div></div><span class="badge-soft" style="color:${c.color}">${c.color}</span></div>
       ${subsHtml}
@@ -4879,10 +4881,19 @@ const GCal = {
     const timeMin = addDays(today(), -14).toISOString();
     const timeMax = addDays(today(), 180).toISOString();
     const resp = await gapi.client.calendar.events.list({calendarId, timeMin, timeMax, maxResults:250, singleEvents:true, orderBy:'startTime'});
-    const items = (resp.result.items||[]).filter(gi=>gi.status!=='cancelled');
+    const CANCEL_PREFIX = /^\s*(cancelad[oa]|cancell?ed)\s*:/i;
+    const isCancelled = (gi)=>{
+      if(gi.status==='cancelled') return true;
+      if(CANCEL_PREFIX.test(gi.summary||'')) return true;
+      // reunião que ela mesma recusou também some do espelho
+      const me = (gi.attendees||[]).find(a=>a.self);
+      if(me && me.responseStatus==='declined') return true;
+      return false;
+    };
+    const items = (resp.result.items||[]).filter(gi=>!isCancelled(gi));
     const seenIds = new Set(items.map(gi=>gi.id));
     let list = Store.events();
-    // remove espelhados desse calendário que sumiram do Google (foram apagados/movidos de lá)
+    // remove espelhados desse calendário que sumiram do Google OU foram cancelados/recusados
     list = list.filter(e=> !(e.googleCalendarId===calendarId && !seenIds.has(e.googleId)));
     let added=0, updated=0;
     items.forEach(gi=>{
@@ -5025,9 +5036,46 @@ document.getElementById('globalSearch').addEventListener('input', (e)=>{
 });
 
 /* ---------------------------------------------------------
+   Migração de categorias antigas -> nova taxonomia (v3)
+--------------------------------------------------------- */
+function migrateCategoriesV3(){
+  if(DB.get('categoriesV3Migrated', false)) return;
+  const remap = (item)=>{
+    const cat = item.category, sub = item.subcategory;
+    if(cat==='borogodo'){ item.category='astrologia'; item.subcategory=''; return; }
+    if(cat==='pessoal'){
+      if(sub==='saude'){ item.category='saude'; item.subcategory=''; }
+      else { item.category='autocuidado'; item.subcategory=''; }
+      return;
+    }
+    if(cat==='rbs'){
+      const map = {clube:'clube', petlove:'petlove', engajamento:'gzh'};
+      item.subcategory = map[sub] || '';
+      return;
+    }
+    if(cat==='casa'){
+      const map = {contas:'financas', organizacao:'organizacao', limpeza:'limpeza'};
+      item.subcategory = map[sub] || '';
+      return;
+    }
+    if(cat==='diversao'){
+      if(sub==='romance'){ item.category='namoro'; item.subcategory=''; return; }
+      const map = {amigos:'amigos', eventos:'eventos'};
+      item.subcategory = map[sub] || '';
+      return;
+    }
+    // umbanda e astrologia mantêm as mesmas chaves de subcategoria de antes
+  };
+  const events = Store.events(); events.forEach(remap); Store.saveEvents(events);
+  const tasks = Store.tasks(); tasks.forEach(remap); Store.saveTasks(tasks);
+  DB.set('categoriesV3Migrated', true);
+}
+
+/* ---------------------------------------------------------
    23. INIT
 --------------------------------------------------------- */
 seedDefaults();
+migrateCategoriesV3();
 importQ3SprintTasks();
 const savedSettings = Store.settings();
 applyTheme(savedSettings.theme || 'light');
