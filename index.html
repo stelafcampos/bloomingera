@@ -713,6 +713,7 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
         <div class="field"><label class="field-label">Senha (definida no seu script)</label><input type="text" id="cloudSyncSecret" placeholder="sua senha"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn btn-primary btn-sm" id="cloudSyncSaveBtn">Salvar conexão</button>
+          <button class="btn btn-ghost btn-sm" id="cloudSyncTestBtn">Testar conexão</button>
           <button class="btn btn-ghost btn-sm" id="cloudSyncPushBtn">Enviar tudo para a nuvem</button>
           <button class="btn btn-ghost btn-sm" id="cloudSyncPullBtn">Puxar da nuvem agora</button>
         </div>
@@ -962,51 +963,75 @@ const CloudSync = {
     const c = this.getConfig();
     return !!(c.url && c.secret);
   },
-  push(key, value){
+  // Faz o POST e devolve {ok, error} de verdade, em vez de fingir sucesso.
+  async pushOne(key, value){
     const c = this.getConfig();
-    if(!c.url || !c.secret) return;
+    if(!c.url || !c.secret) return {ok:false, error:'Conexão não configurada'};
     try{
-      fetch(c.url, {
+      const res = await fetch(c.url, {
         method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'},
         body: JSON.stringify({secret:c.secret, key, value: JSON.stringify(value)})
-      }).catch(()=>{ /* offline ou indisponível — silencioso, os dados continuam salvos localmente */ });
-    }catch(e){ /* fetch indisponível ou URL inválida — não deixa quebrar o salvamento local */ }
+      });
+      const text = await res.text();
+      let json;
+      try{ json = JSON.parse(text); }
+      catch(e){ return {ok:false, error:'Resposta não é JSON — provavelmente a implantação não está pública ("Qualquer pessoa"), ou a URL está errada. Início da resposta: '+text.slice(0,120)}; }
+      if(json.error) return {ok:false, error:json.error};
+      if(!json.ok) return {ok:false, error:'Resposta inesperada do script: '+text.slice(0,120)};
+      return {ok:true};
+    }catch(e){ return {ok:false, error:e.message||'Falha de rede (offline, CORS ou URL incorreta)'}; }
+  },
+  // Push automático de background (silencioso na maior parte, mas avisa 1x por sessão se falhar)
+  push(key, value){
+    const c = this.getConfig();
+    if(!c.url || !c.secret) return;
+    this.pushOne(key, value).then(r=>{
+      if(!r.ok){
+        console.warn('CloudSync push falhou:', r.error);
+        if(!this._warned){ this._warned = true; toast('⚠️ Falha ao sincronizar com a nuvem — veja Configurações'); }
+      }
+    });
   },
   async pullAll(){
     const c = this.getConfig();
-    if(!c.url || !c.secret) return null;
+    if(!c.url || !c.secret) return {data:null, error:'Conexão não configurada'};
     try{
       const res = await fetch(`${c.url}?action=getAll&secret=${encodeURIComponent(c.secret)}`);
-      const json = await res.json();
-      if(json.error){ console.warn('CloudSync:', json.error); return null; }
-      return json.data || {};
-    }catch(e){ console.warn('CloudSync pull falhou', e); return null; }
+      const text = await res.text();
+      let json;
+      try{ json = JSON.parse(text); }
+      catch(e){ return {data:null, error:'Resposta não é JSON (início: '+text.slice(0,120)+'). Confira se a implantação está com acesso "Qualquer pessoa".'}; }
+      if(json.error) return {data:null, error:json.error};
+      return {data:json.data||{}, error:null};
+    }catch(e){ return {data:null, error:e.message||'Falha de rede'}; }
   },
   async pushAll(){
     const c = this.getConfig();
-    if(!c.url || !c.secret) return false;
+    if(!c.url || !c.secret) return {sent:0, failed:0, error:'Conexão não configurada'};
+    let sent=0, failed=0, lastError='';
     for(const k of CLOUD_SYNC_KEYS){
       const val = DB.get(k, null);
       if(val === null) continue;
-      try{
-        await fetch(c.url, {
-          method:'POST',
-          headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({secret:c.secret, key:k, value: JSON.stringify(val)})
-        });
-      }catch(e){ /* ignora falhas pontuais */ }
+      const r = await this.pushOne(k, val);
+      if(r.ok) sent++; else { failed++; lastError = r.error; }
     }
-    return true;
+    return {sent, failed, error: failed ? lastError : null};
   },
   async pullAllAndApply(){
-    const data = await this.pullAll();
-    if(!data) return false;
+    const {data, error} = await this.pullAll();
+    if(!data) return {ok:false, error};
     Object.entries(data).forEach(([k,v])=>{
       if(v===undefined || v===null || v==='') return;
       try{ localStorage.setItem('be_'+k, v); }catch(e){}
     });
-    return true;
+    return {ok:true};
+  },
+  // Teste rápido de conectividade, para diagnosticar problema de configuração
+  async testConnection(){
+    const c = this.getConfig();
+    if(!c.url || !c.secret) return {ok:false, error:'Preencha URL e senha primeiro.'};
+    return await this.pushOne('__ping__', {test:true, at:new Date().toISOString()});
   }
 };
 
@@ -4699,21 +4724,30 @@ document.getElementById('cloudSyncSaveBtn').addEventListener('click', ()=>{
   const secret = document.getElementById('cloudSyncSecret').value.trim();
   if(!url || !secret){ toast('Preencha a URL e a senha'); return; }
   CloudSync.setConfig(url, secret);
+  CloudSync._warned = false;
   updateCloudSyncStatus();
   toast('Conexão salva ☁️');
+});
+document.getElementById('cloudSyncTestBtn').addEventListener('click', async ()=>{
+  toast('Testando conexão...');
+  const r = await CloudSync.testConnection();
+  if(r.ok) toast('✅ Conexão funcionando! Confira a linha "__ping__" na sua planilha.');
+  else { toast('❌ Falhou: '+r.error); console.error('CloudSync teste falhou:', r.error); }
 });
 document.getElementById('cloudSyncPushBtn').addEventListener('click', async ()=>{
   if(!CloudSync.isConfigured()){ toast('Salve a conexão primeiro'); return; }
   toast('Enviando dados para a nuvem...');
-  await CloudSync.pushAll();
-  toast('Dados enviados para a planilha ☁️');
+  const r = await CloudSync.pushAll();
+  if(r.error && r.sent===0) toast('❌ Nada foi enviado: '+r.error);
+  else if(r.failed) toast(`⚠️ ${r.sent} enviado(s), ${r.failed} falharam: ${r.error}`);
+  else toast(`✅ ${r.sent} chave(s) enviada(s) para a planilha ☁️`);
 });
 document.getElementById('cloudSyncPullBtn').addEventListener('click', async ()=>{
   if(!CloudSync.isConfigured()){ toast('Salve a conexão primeiro'); return; }
   toast('Buscando dados da nuvem...');
-  const ok = await CloudSync.pullAllAndApply();
-  if(ok){ toast('Dados atualizados a partir da nuvem ☁️'); refreshCurrentView(); switchView(currentView); }
-  else toast('Não foi possível buscar da nuvem — confira URL/senha');
+  const r = await CloudSync.pullAllAndApply();
+  if(r.ok){ toast('Dados atualizados a partir da nuvem ☁️'); refreshCurrentView(); switchView(currentView); }
+  else toast('❌ Não foi possível buscar da nuvem: '+r.error);
 });
 
 /* ---------------------------------------------------------
@@ -5099,12 +5133,14 @@ loadSprintCache().then(()=>{
   if(currentView==='calendar' || currentView==='home') refreshCurrentView();
 });
 if(CloudSync.isConfigured()){
-  CloudSync.pullAllAndApply().then(ok=>{
-    if(ok){
+  CloudSync.pullAllAndApply().then(r=>{
+    if(r.ok){
       const t = Store.settings();
       applyTheme(t.theme || 'light');
       switchView(currentView);
       toast('Dados sincronizados da nuvem ☁️');
+    } else {
+      console.warn('CloudSync auto-pull falhou:', r.error);
     }
   });
 }
