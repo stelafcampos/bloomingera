@@ -867,7 +867,10 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
     <div class="panel-head"><h3 id="birthdayModalTitle">Novo aniversário</h3><button class="panel-close" onclick="closeBirthdayModal()">✕</button></div>
     <input type="hidden" id="birthdayId">
     <div class="field"><label class="field-label">Nome</label><input type="text" id="birthdayName" placeholder="Nome da pessoa"></div>
-    <div class="field"><label class="field-label">Data de nascimento</label><input type="date" id="birthdayDate"></div>
+    <div class="field-row">
+      <div class="field"><label class="field-label">Dia</label><select id="birthdayDay"></select></div>
+      <div class="field"><label class="field-label">Mês</label><select id="birthdayMonth"></select></div>
+    </div>
     <div class="field"><label class="field-label">Observações</label><textarea id="birthdayNotes" placeholder="Presente, preferências…"></textarea></div>
     <div style="display:flex; justify-content:space-between; margin-top:8px;">
       <button class="btn btn-danger btn-sm hidden" id="birthdayDeleteBtn" onclick="deleteBirthdayFromModal()">Excluir</button>
@@ -1071,6 +1074,7 @@ const CATEGORIES = {
     financas:    {label:'Finanças',    color:'#7A5A38', icon:'💸'},
   }},
   namoro: { label:'Namoro', color:'#B5677A', icon:'👩‍❤️‍💋‍👨' },
+  borogodo: { label:'Borogodó Astral', color:'#4E4370', icon:'🌙' },
 };
 const PRIORITIES = {
   muito_alta: { label:'Muito Alta', color:'#A24E5C', icon:'🔥' },
@@ -3868,19 +3872,26 @@ function renderBirthdays(){
   document.getElementById('birthdaysMonth').innerHTML = thisMonth.length ? thisMonth.map(b=>birthdayRow(b)).join('') : `<div class="empty-state">Nenhum aniversário este mês.</div>`;
 }
 document.getElementById('newBirthdayBtn').addEventListener('click', ()=> openBirthdayModal());
+function buildBirthdayDayMonthSelects(day, month){
+  const dayEl = document.getElementById('birthdayDay');
+  const monthEl = document.getElementById('birthdayMonth');
+  dayEl.innerHTML = [...Array(31)].map((_,i)=>`<option value="${i+1}" ${day===i+1?'selected':''}>${i+1}</option>`).join('');
+  monthEl.innerHTML = MONTH_NAMES.map((m,i)=>`<option value="${i+1}" ${month===i+1?'selected':''}>${m.charAt(0).toUpperCase()+m.slice(1)}</option>`).join('');
+}
 function openBirthdayModal(id){
   document.getElementById('birthdayModalTitle').textContent = id?'Editar aniversário':'Novo aniversário';
   document.getElementById('birthdayDeleteBtn').classList.toggle('hidden', !id);
   if(id){
     const b = Store.birthdays().find(x=>x.id===id);
+    const d = parseKey(b.date);
     document.getElementById('birthdayId').value=b.id;
     document.getElementById('birthdayName').value=b.name;
-    document.getElementById('birthdayDate').value=b.date;
+    buildBirthdayDayMonthSelects(d.getDate(), d.getMonth()+1);
     document.getElementById('birthdayNotes').value=b.notes||'';
   }else{
     document.getElementById('birthdayId').value='';
     document.getElementById('birthdayName').value='';
-    document.getElementById('birthdayDate').value='';
+    buildBirthdayDayMonthSelects(today().getDate(), today().getMonth()+1);
     document.getElementById('birthdayNotes').value='';
   }
   document.getElementById('birthdayModalOverlay').classList.add('open');
@@ -3888,8 +3899,11 @@ function openBirthdayModal(id){
 function closeBirthdayModal(){ document.getElementById('birthdayModalOverlay').classList.remove('open'); }
 function saveBirthdayFromModal(){
   const name = document.getElementById('birthdayName').value.trim();
-  const date = document.getElementById('birthdayDate').value;
-  if(!name || !date){ toast('Preencha nome e data'); return; }
+  const day = Number(document.getElementById('birthdayDay').value);
+  const month = Number(document.getElementById('birthdayMonth').value);
+  if(!name){ toast('Preencha o nome'); return; }
+  // guarda com um ano fixo (2000, bissexto) — o app nunca usa o ano de aniversário, só dia e mês
+  const date = `2000-${pad2(month)}-${pad2(day)}`;
   const id = document.getElementById('birthdayId').value;
   const list = Store.birthdays();
   const data = {name, date, notes:document.getElementById('birthdayNotes').value};
