@@ -1008,15 +1008,30 @@ const CloudSync = {
   async pullAll(){
     const c = this.getConfig();
     if(!c.url || !c.secret) return {data:null, error:'Conexão não configurada'};
+    // Usa POST (mesmo método já confirmado funcionando no push/teste) para evitar
+    // bloqueios de rede/navegador específicos de requisições GET com parâmetros na URL.
     try{
-      const res = await fetch(`${c.url}?action=getAll&secret=${encodeURIComponent(c.secret)}`);
+      const res = await fetch(c.url, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({secret:c.secret, action:'getAll'})
+      });
       const text = await res.text();
       let json;
       try{ json = JSON.parse(text); }
       catch(e){ return {data:null, error:'Resposta não é JSON (início: '+text.slice(0,120)+'). Confira se a implantação está com acesso "Qualquer pessoa".'}; }
       if(json.error) return {data:null, error:json.error};
       return {data:json.data||{}, error:null};
-    }catch(e){ return {data:null, error:e.message||'Falha de rede'}; }
+    }catch(e){
+      // fallback: tenta o método antigo (GET), caso o Apps Script ainda esteja na versão anterior
+      try{
+        const res2 = await fetch(`${c.url}?action=getAll&secret=${encodeURIComponent(c.secret)}`);
+        const text2 = await res2.text();
+        const json2 = JSON.parse(text2);
+        if(json2.error) return {data:null, error:json2.error};
+        return {data:json2.data||{}, error:null};
+      }catch(e2){ return {data:null, error:e.message||'Falha de rede (offline, bloqueio do navegador/rede, ou URL incorreta)'}; }
+    }
   },
   async pushAll(){
     const c = this.getConfig();
