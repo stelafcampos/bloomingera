@@ -952,9 +952,21 @@ const DB = {
    (config fica fora do DB normal para não entrar no loop de sync)
 --------------------------------------------------------- */
 const CLOUD_SYNC_KEYS = ['events','tasks','habits','habitLogs','journal','birthdays','sprintTasks','settings'];
+// Conexão padrão já configurada — assim qualquer navegador que abrir este mesmo arquivo
+// já sincroniza sozinho, sem precisar colar a URL/senha em cada aparelho manualmente.
+// (a senha aqui só protege a planilha de acesso aleatório por terceiros que não tenham o link do app;
+// como o arquivo é público no GitHub Pages, evite reaproveitar essa senha em outro lugar.)
+const DEFAULT_CLOUD_CONFIG = {
+  url: 'https://script.google.com/macros/s/AKfycbyyKDb339CytpUdRAfWN2Po5fC1lZePTaA4Pu2cG_25UVsxroZMnMRWCXCd8Tl_IRBn/exec',
+  secret: 'stela-blooming-2026-xpto',
+};
 const CloudSync = {
   getConfig(){
-    try{ return JSON.parse(localStorage.getItem('be_cloudConfig')||'{}'); }catch(e){ return {}; }
+    try{
+      const stored = JSON.parse(localStorage.getItem('be_cloudConfig')||'{}');
+      if(stored.url && stored.secret) return stored;
+    }catch(e){}
+    return DEFAULT_CLOUD_CONFIG;
   },
   setConfig(url, secret){
     localStorage.setItem('be_cloudConfig', JSON.stringify({url:(url||'').trim(), secret:(secret||'').trim()}));
