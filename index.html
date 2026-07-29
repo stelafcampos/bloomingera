@@ -379,6 +379,33 @@ label.field-label{font-size:11.5px; font-weight:700; color:var(--text-soft); tex
 .gcal-status .status-dot.on{background:var(--sage);}
 
 code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; font-family:var(--font-mono); font-size:11.5px;}
+
+/* ---------- Sprints 2.0 (kanban) ---------- */
+.sprint-layout{display:grid; grid-template-columns:230px 1fr; gap:20px; align-items:start;}
+@media (max-width:1000px){ .sprint-layout{grid-template-columns:1fr;} }
+.sprint-sidebar{position:sticky; top:0;}
+.sprint-list-item{display:flex; justify-content:space-between; align-items:center; gap:6px; padding:8px 10px; border-radius:10px; cursor:pointer; margin-bottom:4px; font-size:12.5px;}
+.sprint-list-item:hover{background:var(--surface-2);}
+.sprint-list-item.active{background:var(--primary-soft); color:var(--primary-deep); font-weight:700;}
+.kanban-board{display:grid; grid-template-columns:repeat(4,minmax(230px,1fr)); gap:14px; overflow-x:auto; padding-bottom:10px;}
+@media (max-width:900px){ .kanban-board{grid-template-columns:repeat(4,84vw); }}
+.kanban-column{background:var(--surface-2); border-radius:16px; padding:12px; min-height:200px; display:flex; flex-direction:column;}
+.kanban-column-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 4px;}
+.kanban-column-head h4{font-size:12.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-soft);}
+.kanban-column.drag-over{outline:2px dashed var(--primary-line); outline-offset:-4px;}
+.kanban-card{background:var(--surface); border:1px solid var(--border-soft); border-radius:12px; padding:11px 12px; margin-bottom:10px; cursor:grab; box-shadow:var(--shadow-sm); transition:box-shadow .15s ease, transform .15s ease;}
+.kanban-card:hover{box-shadow:var(--shadow-md); transform:translateY(-1px);}
+.kanban-card.dragging{opacity:.4;}
+.kanban-card .kc-title{font-size:12.8px; font-weight:700; margin-bottom:6px; line-height:1.35;}
+.kanban-card .kc-meta{display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
+.kanban-card .kc-overdue{color:var(--danger); font-weight:700;}
+.history-item{display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft); font-size:12px;}
+.history-item:last-child{border-bottom:none;}
+.history-item .h-dot{width:7px; height:7px; border-radius:50%; background:var(--primary); margin-top:5px; flex-shrink:0;}
+.attachment-row{display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--surface-2); border-radius:10px; margin-bottom:6px; font-size:12px;}
+.attachment-row .att-icon{font-size:16px;}
+.attachment-row .att-name{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.subtask-card{background:var(--surface-2); border-radius:12px; padding:10px 12px; margin-bottom:8px;}
 </style>
 </head>
 <body>
@@ -607,22 +634,42 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
       </div>
     </section>
 
-    <!-- ===================== SPRINTS (RBS) ===================== -->
+    <!-- ===================== SPRINTS 2.0 (Jira/Asana style) ===================== -->
     <section class="view" id="view-sprints">
-      <div class="filters-bar" style="align-items:center; flex-wrap:wrap;">
-        <div id="sprintTabsRow" style="display:flex; gap:6px; flex-wrap:wrap; flex:1;"></div>
-        <button class="btn btn-soft btn-sm" onclick="promptNewSprint()">+ nova sprint</button>
-        <button class="btn btn-primary btn-sm" onclick="openSprintTaskModal()">+ nova task</button>
+      <div id="sprintDashboard" class="grid grid-4" style="margin-bottom:14px;"></div>
+      <div id="sprintDashboardExtra" class="grid grid-2" style="margin-bottom:18px;"></div>
+
+      <div class="sprint-layout">
+        <aside class="sprint-sidebar">
+          <div class="card card-pad" style="margin-bottom:14px;">
+            <div class="section-title"><h3 style="font-size:13px;">Sprints</h3><button class="btn btn-icon btn-sm" onclick="openSprintModal()" title="Nova sprint">+</button></div>
+            <div id="sprintListNav"></div>
+          </div>
+          <div class="card card-pad">
+            <div class="section-title"><h3 style="font-size:13px;">Filtros</h3><button class="link" onclick="clearSprintFilters()">limpar</button></div>
+            <div class="field"><label class="field-label">Categoria</label><select id="filterCategoria"><option value="">Todas</option></select></div>
+            <div class="field"><label class="field-label">Status</label><select id="filterStatus"><option value="">Todos</option></select></div>
+            <div class="field"><label class="field-label">Prioridade</label><select id="filterPrioridade"><option value="">Todas</option></select></div>
+            <div class="field"><label class="field-label">Habilitador</label><input type="text" id="filterHabilitador" placeholder="buscar..."></div>
+            <div class="field"><label class="field-label">Responsável</label><input type="text" id="filterResponsavel" placeholder="buscar..."></div>
+          </div>
+        </aside>
+
+        <div class="sprint-center">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+            <h2 id="sprintBoardTitle" style="font-size:18px;">Todas as sprints</h2>
+            <button class="btn btn-primary btn-sm" onclick="openTaskDetailPanel(null)">+ nova task</button>
+          </div>
+          <div class="kanban-board" id="kanbanBoard"></div>
+        </div>
       </div>
-      <div id="sprintCurrentBar" style="margin-bottom:14px;"></div>
-      <div id="sprintBoard"></div>
     </section>
 
     <!-- ===================== SETTINGS ===================== -->
     <section class="view" id="view-settings">
       <div class="grid grid-2">
         <div class="card card-pad">
-          <div class="section-title"><h3>🔗 Google Calendar</h3></div>
+          <div class="section-title"><h3>🔗 Google Calendar — espelho automático</h3></div>
           <p style="font-size:12.5px; color:var(--text-soft); line-height:1.6; margin-bottom:12px;">
             Para sincronizar de verdade, crie um projeto gratuito no Google Cloud Console, ative a Google Calendar API e gere um <b>Client ID (OAuth)</b> e uma <b>API Key</b>. Cole-os abaixo — eles ficam salvos apenas no seu navegador.
           </p>
@@ -630,9 +677,14 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
           <div class="field"><label class="field-label">API Key</label><input type="text" id="gcalApiKey" placeholder="AIza..."></div>
           <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
             <button class="btn btn-primary btn-sm" id="gcalConnectBtn">Conectar</button>
-            <button class="btn btn-ghost btn-sm" id="gcalImportBtn">Importar eventos</button>
+            <button class="btn btn-ghost btn-sm" id="gcalSyncNowBtn">Sincronizar agora</button>
           </div>
+          <div class="divider"></div>
+          <p style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-faint); margin-bottom:8px;">Mapeamento de calendários → categorias</p>
+          <p style="font-size:11px; color:var(--text-faint); margin-bottom:10px;">Para cada calendário do Google (incluindo o do Outlook compartilhado), escolha em qual tema do Blooming Era ele deve cair. Calendários marcados como "Não sincronizar" ficam de fora.</p>
+          <div id="gcalCalendarMapList"><div class="empty-state">Conecte-se para ver seus calendários.</div></div>
           <div class="gcal-status" style="margin-top:14px;"><span class="status-dot" id="gcalDot"></span><span id="gcalStatusText">Não conectado</span></div>
+          <p style="font-size:10.5px; color:var(--text-faint); margin-top:10px; line-height:1.5;">⚠️ Não é sincronização instantânea de verdade (isso exigiria um servidor por trás) — o app busca as mudanças automaticamente a cada poucos minutos enquanto estiver aberto, além de sempre que você clicar em "Sincronizar agora". Eventos apagados no Google também somem daqui na próxima sincronização.</p>
         </div>
 
         <div class="card card-pad">
@@ -650,6 +702,40 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
           <input type="file" id="importFileInput" accept=".json" class="hidden">
           <button class="btn btn-danger btn-sm" id="resetDataBtn">Restaurar padrão</button>
         </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:18px;">
+        <div class="section-title"><h3>☁️ Banco de dados (Google Sheets)</h3></div>
+        <p style="font-size:12.5px; color:var(--text-soft); line-height:1.6; margin-bottom:12px;">
+          Conecte uma planilha do Google Sheets (via Apps Script) para sincronizar seus dados entre navegadores e aparelhos diferentes. Depois de configurar aqui, cada alteração no app é enviada automaticamente para a planilha, e ao abrir em outro navegador ele puxa os dados mais recentes de lá.
+        </p>
+        <div class="field"><label class="field-label">URL do Web App (Apps Script)</label><input type="text" id="cloudSyncUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+        <div class="field"><label class="field-label">Senha (definida no seu script)</label><input type="text" id="cloudSyncSecret" placeholder="sua senha"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" id="cloudSyncSaveBtn">Salvar conexão</button>
+          <button class="btn btn-ghost btn-sm" id="cloudSyncPushBtn">Enviar tudo para a nuvem</button>
+          <button class="btn btn-ghost btn-sm" id="cloudSyncPullBtn">Puxar da nuvem agora</button>
+        </div>
+        <div class="gcal-status" style="margin-top:14px;"><span class="status-dot" id="cloudSyncDot"></span><span id="cloudSyncStatusText">Não conectado</span></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:18px;">
+        <div class="section-title"><h3>📆 Calendário do Teams / Outlook</h3></div>
+        <p style="font-size:12.5px; color:var(--text-soft); line-height:1.6; margin-bottom:12px;">
+          O Teams usa o calendário do Outlook por baixo dos panos. Duas formas de trazer ele pra cá — nenhuma exige acesso de TI, só a sua conta:
+        </p>
+        <p style="font-size:12px; font-weight:700; margin-bottom:6px;">Opção 1 — Arquivo .ics (mais confiável)</p>
+        <p style="font-size:11.5px; color:var(--text-soft); line-height:1.6; margin-bottom:8px;">No Outlook na web: Configurações → Calendário → Calendários compartilhados → "Exportar" (ou no app: reunião → "..." → Exportar). Baixe o arquivo <code class="inline">.ics</code> e suba aqui sempre que quiser atualizar.</p>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+          <input type="file" id="icsFileInput" accept=".ics" class="hidden">
+          <button class="btn btn-primary btn-sm" id="icsFileBtn">Escolher arquivo .ics</button>
+          <span id="icsFileName" style="font-size:12px; color:var(--text-soft);"></span>
+        </div>
+        <p style="font-size:12px; font-weight:700; margin-bottom:6px;">Opção 2 — Link de assinatura (tentativa automática)</p>
+        <p style="font-size:11.5px; color:var(--text-soft); line-height:1.6; margin-bottom:8px;">Em Configurações → Calendário → "Publicar um calendário" no Outlook, copie o link ICS (começa com <code class="inline">https://outlook.office365.com/owa/calendar/.../calendar.ics</code>). Pode não funcionar por restrição do navegador (CORS) — se falhar, use a Opção 1.</p>
+        <div class="field"><input type="text" id="icsUrlInput" placeholder="https://outlook.office365.com/owa/calendar/.../calendar.ics"></div>
+        <button class="btn btn-ghost btn-sm" id="icsUrlBtn">Tentar importar por link</button>
+        <div class="gcal-status" style="margin-top:14px;"><span id="icsStatusText">Nenhuma importação ainda.</span></div>
       </div>
     </section>
 
@@ -793,41 +879,30 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
   </div>
 </div>
 
-<!-- ============ SPRINT TASK MODAL (RBS) ============ -->
-<div class="modal-overlay" id="sprintTaskModalOverlay">
+<!-- ============ SPRINT (ENTIDADE) MODAL ============ -->
+<div class="modal-overlay" id="sprintModalOverlay">
   <div class="modal-box">
-    <div class="panel-head"><h3 id="sprintTaskModalTitle">Nova task de sprint</h3><button class="panel-close" onclick="closeSprintTaskModal()">✕</button></div>
-    <input type="hidden" id="sprintTaskId">
-    <div class="field"><label class="field-label">Título da task</label><input type="text" id="sprintTaskTitle" placeholder="O que precisa ser entregue?"></div>
+    <div class="panel-head"><h3 id="sprintModalTitle">Nova sprint</h3><button class="panel-close" onclick="closeSprintModal()">✕</button></div>
+    <input type="hidden" id="sprintId">
+    <div class="field"><label class="field-label">Nome</label><input type="text" id="sprintName" placeholder="Ex: Sprint 6 — Ago/2026"></div>
     <div class="field-row">
-      <div class="field"><label class="field-label">Macro</label><input type="text" id="sprintTaskMacro" list="sprintMacroList" placeholder="Ex: Aquisição"></div>
-      <div class="field"><label class="field-label">Épico</label><input type="text" id="sprintTaskEpico" list="sprintEpicoList" placeholder="Ex: Canais pagos"></div>
+      <div class="field"><label class="field-label">Data início</label><input type="date" id="sprintStartDate"></div>
+      <div class="field"><label class="field-label">Data fim</label><input type="date" id="sprintEndDate"></div>
     </div>
-    <datalist id="sprintMacroList"></datalist>
-    <datalist id="sprintEpicoList"></datalist>
-    <div class="field"><label class="field-label">Marco (opcional — para eu ter visibilidade mesmo quando não sou responsável pelo marco)</label><input type="text" id="sprintTaskMarco" placeholder="Ex: Lançamento Clube Q3"></div>
-    <div class="field-row">
-      <div class="field"><label class="field-label">Sprint</label><input type="text" id="sprintTaskSprint" list="sprintNameList" placeholder="Ex: Sprint 14 (07–18/07)"></div>
-      <div class="field"><label class="field-label">Responsável(is)</label><input type="text" id="sprintTaskResponsavel" placeholder="Ex: Stela, Daniela"></div>
-    </div>
-    <datalist id="sprintNameList"></datalist>
-    <div class="field">
-      <label class="field-label">Status</label>
-      <div class="priority-select" id="sprintTaskStatusSelect"></div>
-    </div>
-    <div class="field">
-      <label class="field-label">Prioridade</label>
-      <div class="priority-select" id="sprintTaskPrioritySelect"></div>
-    </div>
-    <div class="field"><label class="field-label">Notas</label><textarea id="sprintTaskNotes"></textarea></div>
+    <div class="field"><label class="field-label">Status</label><div class="priority-select" id="sprintStatusSelect"></div></div>
     <div style="display:flex; justify-content:space-between; margin-top:8px;">
-      <button class="btn btn-danger btn-sm hidden" id="sprintTaskDeleteBtn" onclick="deleteSprintTaskFromModal()">Excluir</button>
+      <button class="btn btn-danger btn-sm hidden" id="sprintDeleteBtn" onclick="deleteSprintEntity()">Excluir sprint</button>
       <div style="display:flex; gap:10px; margin-left:auto;">
-        <button class="btn btn-ghost btn-sm" onclick="closeSprintTaskModal()">Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="saveSprintTaskFromModal()">Salvar</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeSprintModal()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveSprintEntity()">Salvar</button>
       </div>
     </div>
   </div>
+</div>
+
+<!-- ============ TASK DETAIL SIDE PANEL (Jira/Asana/Notion style) ============ -->
+<div class="overlay" id="taskDetailOverlay" onclick="if(event.target===this) closeTaskDetailPanel()">
+  <div class="side-panel" id="taskDetailPanel" style="width:560px;"></div>
 </div>
 
 <!-- ============ EVENT DETAILS SIDE PANEL ============ -->
@@ -864,6 +939,71 @@ const DB = {
   },
   set(key, value){
     localStorage.setItem('be_'+key, JSON.stringify(value));
+    if(CloudSync.isConfigured()) CloudSync.push(key, value);
+  }
+};
+
+/* ---------------------------------------------------------
+   1b. CLOUD SYNC — Google Sheets como banco de dados
+   (config fica fora do DB normal para não entrar no loop de sync)
+--------------------------------------------------------- */
+const CLOUD_SYNC_KEYS = ['events','tasks','habits','habitLogs','journal','birthdays','sprintTasks','settings'];
+const CloudSync = {
+  getConfig(){
+    try{ return JSON.parse(localStorage.getItem('be_cloudConfig')||'{}'); }catch(e){ return {}; }
+  },
+  setConfig(url, secret){
+    localStorage.setItem('be_cloudConfig', JSON.stringify({url:(url||'').trim(), secret:(secret||'').trim()}));
+  },
+  isConfigured(){
+    const c = this.getConfig();
+    return !!(c.url && c.secret);
+  },
+  push(key, value){
+    const c = this.getConfig();
+    if(!c.url || !c.secret) return;
+    try{
+      fetch(c.url, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({secret:c.secret, key, value: JSON.stringify(value)})
+      }).catch(()=>{ /* offline ou indisponível — silencioso, os dados continuam salvos localmente */ });
+    }catch(e){ /* fetch indisponível ou URL inválida — não deixa quebrar o salvamento local */ }
+  },
+  async pullAll(){
+    const c = this.getConfig();
+    if(!c.url || !c.secret) return null;
+    try{
+      const res = await fetch(`${c.url}?action=getAll&secret=${encodeURIComponent(c.secret)}`);
+      const json = await res.json();
+      if(json.error){ console.warn('CloudSync:', json.error); return null; }
+      return json.data || {};
+    }catch(e){ console.warn('CloudSync pull falhou', e); return null; }
+  },
+  async pushAll(){
+    const c = this.getConfig();
+    if(!c.url || !c.secret) return false;
+    for(const k of CLOUD_SYNC_KEYS){
+      const val = DB.get(k, null);
+      if(val === null) continue;
+      try{
+        await fetch(c.url, {
+          method:'POST',
+          headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({secret:c.secret, key:k, value: JSON.stringify(val)})
+        });
+      }catch(e){ /* ignora falhas pontuais */ }
+    }
+    return true;
+  },
+  async pullAllAndApply(){
+    const data = await this.pullAll();
+    if(!data) return false;
+    Object.entries(data).forEach(([k,v])=>{
+      if(v===undefined || v===null || v==='') return;
+      try{ localStorage.setItem('be_'+k, v); }catch(e){}
+    });
+    return true;
   }
 };
 
@@ -3353,7 +3493,7 @@ document.getElementById('quickAddBtn').addEventListener('click', ()=>{
   if(currentView==='tasks') openTaskModal();
   else if(currentView==='habits') openHabitModal();
   else if(currentView==='birthdays') openBirthdayModal();
-  else if(currentView==='sprints') openSprintTaskModal();
+  else if(currentView==='sprints') openTaskDetailPanel(null);
   else openEventModal();
 });
 
@@ -3841,19 +3981,193 @@ document.getElementById('consPeriod').addEventListener('change', renderConsolida
 document.getElementById('consCategory').addEventListener('change', renderConsolidated);
 
 /* ============================================================
-   19b. SPRINTS (RBS) — macro › épico › tasks, por sprint
+   19b. SPRINTS 2.0 — gestor pessoal de sprint (estilo Jira/Asana/Notion)
+   Persistência em IndexedDB (sprints e tasks, com subtasks/anexos/
+   histórico aninhados dentro de cada task).
 ============================================================ */
-function allSprintNames(){
-  const names = [...new Set(Store.sprintTasks().map(t=>t.sprint).filter(Boolean))];
-  // ordena por número de sprint quando o nome começa com "Sprint N", senão por ordem alfabética
-  return names.sort((a,b)=>{
-    const na = a.match(/(\d+)/), nb = b.match(/(\d+)/);
-    if(na && nb) return Number(na[1]) - Number(nb[1]);
-    return a.localeCompare(b);
+const SPRINT_CATEGORIES = ['GZH','Clube do Assinante','Petlove','Licenciamento de Camisetas'];
+const SPRINT2_PRIORITY = {
+  baixa:   { label:'Baixa',   color:'#8FA88A', order:3 },
+  media:   { label:'Média',   color:'#8B8FC9', order:2 },
+  alta:    { label:'Alta',    color:'#C48A3F', order:1 },
+  critica: { label:'Crítica', color:'#A24E5C', order:0 },
+};
+const SPRINT2_STATUS = {
+  nao_iniciado: { label:'Não iniciado', color:'#8B93A8' },
+  em_andamento: { label:'Em andamento', color:'#5E7F72' },
+  concluida:    { label:'Concluída',    color:'#5B8A6B' },
+  cancelada:    { label:'Cancelada',    color:'#B25A63' },
+};
+const SPRINT_ENTITY_STATUS = {
+  planejada:    { label:'Planejada',    color:'#8B8FC9' },
+  em_andamento: { label:'Em andamento', color:'#5E7F72' },
+  encerrada:    { label:'Encerrada',    color:'#8B93A8' },
+  cancelada:    { label:'Cancelada',    color:'#B25A63' },
+};
+const KANBAN_COLUMNS = ['nao_iniciado','em_andamento','concluida','cancelada'];
+
+/* ---- IndexedDB — camada de persistência ---- */
+const SprintDB = {
+  _db:null,
+  open(){
+    if(this._db) return Promise.resolve(this._db);
+    return new Promise((resolve,reject)=>{
+      if(typeof indexedDB === 'undefined'){ reject(new Error('IndexedDB indisponível neste navegador/modo')); return; }
+      try{
+        const req = indexedDB.open('BloomingEraSprintsDB', 1);
+        req.onupgradeneeded = (e)=>{
+          const db = e.target.result;
+          if(!db.objectStoreNames.contains('sprints')) db.createObjectStore('sprints', {keyPath:'id'});
+          if(!db.objectStoreNames.contains('tasks')) db.createObjectStore('tasks', {keyPath:'id'});
+        };
+        req.onsuccess = ()=>{ this._db = req.result; resolve(this._db); };
+        req.onerror = ()=> reject(req.error);
+      }catch(e){ reject(e); }
+    });
+  },
+  async getAll(store){
+    const db = await this.open();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readonly');
+      const req = tx.objectStore(store).getAll();
+      req.onsuccess = ()=> resolve(req.result||[]);
+      req.onerror = ()=> reject(req.error);
+    });
+  },
+  async put(store, obj){
+    const db = await this.open();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readwrite');
+      tx.objectStore(store).put(obj);
+      tx.oncomplete = ()=> resolve();
+      tx.onerror = ()=> reject(tx.error);
+    });
+  },
+  async remove(store, id){
+    const db = await this.open();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readwrite');
+      tx.objectStore(store).delete(id);
+      tx.oncomplete = ()=> resolve();
+      tx.onerror = ()=> reject(tx.error);
+    });
+  },
+};
+
+const SPRINT2 = { sprints:[], tasks:[], loaded:false, selectedSprintId:'', filters:{categoria:'',status:'',prioridade:'',habilitador:'',responsavel:''} };
+function todayISO(){ return dateKey(today()); }
+function escAttr(s){ return (s==null?'':String(s)).replace(/"/g,'&quot;'); }
+function escHtml(s){ return (s==null?'':String(s)).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 }
-// Lê o intervalo de datas embutido no nome da sprint (ex: "Iteração 2 - 27/07 a 07/08" ou "Sprint 14 (07/07–18/07)")
-function parseSprintDateRange(sprintName){
+function fileIcon(type){
+  type = type||'';
+  if(type.startsWith('image/')) return '🖼️';
+  if(type.includes('pdf')) return '📕';
+  if(type.includes('sheet')||type.includes('excel')) return '📊';
+  if(type.includes('word')||type.includes('document')) return '📄';
+  if(type.includes('zip')) return '🗜️';
+  return '📎';
+}
+function sprintEntityStatusFor(sp){
+  if(sp.status==='cancelada') return 'cancelada';
+  const t = todayISO();
+  if(sp.endDate && t > sp.endDate) return 'encerrada';
+  if(sp.startDate && t < sp.startDate) return 'planejada';
+  return 'em_andamento';
+}
+function isOverdue(task){
+  return task.dueDate && task.dueDate < todayISO() && task.status!=='concluida' && task.status!=='cancelada';
+}
+function logHistory(task, type, text){
+  task.history = task.history || [];
+  task.history.push({date:new Date().toISOString(), type, text});
+}
+function fieldChangeLog(task, label, oldVal, newVal){
+  if(oldVal===newVal) return;
+  logHistory(task, 'alteração', `${label}: "${oldVal||'—'}" → "${newVal||'—'}"`);
+}
+
+/* ---- Carregamento + migração automática dos dados antigos ---- */
+async function loadSprintCache(){
+  try{
+    SPRINT2.sprints = await SprintDB.getAll('sprints');
+    SPRINT2.tasks = await SprintDB.getAll('tasks');
+    SPRINT2.loaded = true;
+    await migrateOldSprintDataIfNeeded();
+  }catch(e){
+    console.warn('Sprints 2.0: IndexedDB indisponível, seguindo sem esse recurso.', e);
+    SPRINT2.sprints = []; SPRINT2.tasks = []; SPRINT2.loaded = false; SPRINT2.unavailable = true;
+  }
+}
+async function migrateOldSprintDataIfNeeded(){
+  if(DB.get('sprintV2Migrated', false)) return;
+  const oldTasks = (typeof Store!=='undefined' && Store.sprintTasks) ? Store.sprintTasks() : [];
+  if(oldTasks && oldTasks.length){
+    const oldSprintNames = [...new Set(oldTasks.map(t=>t.sprint).filter(Boolean))];
+    const sprintIdByName = {};
+    for(const name of oldSprintNames){
+      const range = (typeof parseSprintDateRangeLegacy==='function') ? parseSprintDateRangeLegacy(name) : null;
+      const sprint = {
+        id: uid(), name,
+        startDate: range ? dateKey(range.start) : todayISO(),
+        endDate: range ? dateKey(range.end) : todayISO(),
+        status: 'em_andamento',
+      };
+      sprint.status = sprintEntityStatusFor(sprint);
+      SPRINT2.sprints.push(sprint);
+      sprintIdByName[name] = sprint.id;
+      await SprintDB.put('sprints', sprint);
+    }
+    const CATEGORY_KEYWORD_MAP = [
+      [/petlove/i, 'Petlove'],
+      [/licenciamento/i, 'Licenciamento de Camisetas'],
+      [/clube/i, 'Clube do Assinante'],
+      [/gzh/i, 'GZH'],
+    ];
+    const OLD_PRIORITY_MAP = {altissima:'critica', alta:'alta', media:'media', baixa:'baixa', baixissima:'baixa'};
+    const OLD_STATUS_MAP = {nao_iniciado:'nao_iniciado', em_andamento:'em_andamento', concluido:'concluida', cancelado:'cancelada', pausado:'nao_iniciado', aguardando_definicoes:'nao_iniciado', despriorizado:'nao_iniciado'};
+    const OLD_STATUS_LABELS = {pausado:'Pausado', aguardando_definicoes:'Aguardando definições', despriorizado:'Despriorizado'};
+    for(const old of oldTasks){
+      let category = SPRINT_CATEGORIES[0];
+      const haystack = `${old.macro||''} ${old.epico||''} ${old.title||''}`;
+      for(const [re,cat] of CATEGORY_KEYWORD_MAP){ if(re.test(haystack)){ category = cat; break; } }
+      const extraNote = [];
+      if(old.macro) extraNote.push('Macro original: '+old.macro);
+      if(old.epico) extraNote.push('Épico original: '+old.epico);
+      const statusNote = OLD_STATUS_LABELS[old.status] ? ` (status anterior: ${OLD_STATUS_LABELS[old.status]})` : '';
+      const sprintId = sprintIdByName[old.sprint] || '';
+      const sprintObj = SPRINT2.sprints.find(s=>s.id===sprintId);
+      const task = {
+        id: uid(),
+        title: old.title || '(sem título)',
+        description: (old.notes||'') + (extraNote.length? '\n\n'+extraNote.join(' · ') : '') + statusNote,
+        category,
+        habilitador: old.marco || old.epico || '',
+        sprintId,
+        responsavel: old.responsavel || '',
+        priority: OLD_PRIORITY_MAP[old.priority] || 'media',
+        status: OLD_STATUS_MAP[old.status] || 'nao_iniciado',
+        dueDate: sprintObj ? sprintObj.endDate : todayISO(),
+        attachments: [],
+        subtasks: [],
+        history: [{date:new Date().toISOString(), type:'criação', text:'Migrado do sistema de sprints anterior.'}],
+        createdAt: new Date().toISOString(),
+      };
+      SPRINT2.tasks.push(task);
+      await SprintDB.put('tasks', task);
+    }
+  }
+  DB.set('sprintV2Migrated', true);
+}
+// Versão preservada da lógica antiga de parsing de datas (usada só na migração)
+function parseSprintDateRangeLegacy(sprintName){
   const matches = sprintName.match(/(\d{1,2})\/(\d{1,2})/g);
   if(!matches || matches.length<2) return null;
   const [d1,m1] = matches[0].split('/').map(Number);
@@ -3863,201 +4177,475 @@ function parseSprintDateRange(sprintName){
   const end = new Date(m2<m1 ? year+1 : year, m2-1, d2, 23,59,59);
   return {start, end};
 }
-// Quais sprints (por data) cobrem o intervalo [rangeStart, rangeEnd] — pode ser mais de uma se a semana cruzar duas sprints
-function sprintsForDateRange(rangeStart, rangeEnd){
-  return allSprintNames().filter(name=>{
-    const r = parseSprintDateRange(name);
-    if(!r) return false;
-    return r.start <= rangeEnd && r.end >= rangeStart;
-  });
+
+/* ---- Sprint (entidade): CRUD ---- */
+function openSprintModal(id){
+  document.getElementById('sprintModalTitle').textContent = id ? 'Editar sprint' : 'Nova sprint';
+  document.getElementById('sprintDeleteBtn').classList.toggle('hidden', !id);
+  const sp = id ? SPRINT2.sprints.find(s=>s.id===id) : null;
+  document.getElementById('sprintId').value = id || '';
+  document.getElementById('sprintName').value = sp ? sp.name : '';
+  document.getElementById('sprintStartDate').value = sp ? sp.startDate : todayISO();
+  document.getElementById('sprintEndDate').value = sp ? sp.endDate : todayISO();
+  const currentStatus = sp ? sp.status : 'planejada';
+  document.getElementById('sprintStatusSelect').innerHTML = Object.entries(SPRINT_ENTITY_STATUS).map(([k,s])=>
+    `<button type="button" class="pill-choice ${currentStatus===k?'active':''}" style="color:${s.color}" data-cat="${k}" onclick="pickCat(this,'sprintStatusSelect')">${s.label}</button>`
+  ).join('');
+  document.getElementById('sprintModalOverlay').classList.add('open');
 }
-function currentSprintName(){ return Store.settings().currentSprint || ''; }
-function setCurrentSprint(name){
-  const s = Store.settings(); s.currentSprint = name; Store.saveSettings(s);
-  toast('Sprint atual definida 🚀');
-  if(currentView==='sprints') renderSprints();
-  if(currentView==='calendar') renderCalendar();
-}
-function promptNewSprint(){
-  const name = prompt('Nome da nova sprint (ex: "Sprint 15 (21/07–01/08)")');
-  if(!name) return;
-  window._sprintTabSelected = name;
+function closeSprintModal(){ document.getElementById('sprintModalOverlay').classList.remove('open'); }
+async function saveSprintEntity(){
+  const name = document.getElementById('sprintName').value.trim();
+  if(!name){ toast('Dê um nome à sprint'); return; }
+  const id = document.getElementById('sprintId').value;
+  const data = {
+    name,
+    startDate: document.getElementById('sprintStartDate').value,
+    endDate: document.getElementById('sprintEndDate').value,
+    status: getPickedCat('sprintStatusSelect'),
+  };
+  let sp;
+  if(id){ sp = SPRINT2.sprints.find(s=>s.id===id); Object.assign(sp, data); }
+  else { sp = {id:uid(), ...data}; SPRINT2.sprints.push(sp); }
+  await SprintDB.put('sprints', sp);
+  closeSprintModal();
+  toast('Sprint salva 🚀');
   renderSprints();
 }
-function sprintTasksFor(sprintName){
-  return Store.sprintTasks().filter(t=>t.sprint===sprintName)
-    .sort((a,b)=> (SPRINT_PRIORITY[a.priority]?.order ?? 9) - (SPRINT_PRIORITY[b.priority]?.order ?? 9));
+async function deleteSprintEntity(){
+  const id = document.getElementById('sprintId').value;
+  if(!id) return;
+  if(!confirm('Excluir esta sprint? As tasks vinculadas continuam existindo, só ficam sem sprint.')) return;
+  const affected = SPRINT2.tasks.filter(t=>t.sprintId===id);
+  for(const t of affected){ t.sprintId=''; await SprintDB.put('tasks', t); }
+  SPRINT2.sprints = SPRINT2.sprints.filter(s=>s.id!==id);
+  await SprintDB.remove('sprints', id);
+  if(SPRINT2.selectedSprintId===id) SPRINT2.selectedSprintId='';
+  closeSprintModal();
+  toast('Sprint excluída');
+  renderSprints();
 }
-// Linha de task reutilizável, com "perda de evidência" visual para concluído/despriorizado/cancelado
-function sprintTaskRowHtml(t){
-  const faded = SPRINT_FADED_STATUSES.includes(t.status);
-  return `<div class="list-item" style="cursor:pointer; ${faded?'opacity:.5;':''}" onclick="openSprintTaskModal('${t.id}')">
-    <div class="content"><div class="title" style="${faded?'text-decoration:line-through;':''}">${t.title}${t.marco?` <span class="badge-soft">🏁 ${t.marco}</span>`:''}</div><div class="meta">👤 ${t.responsavel||'—'}</div></div>
-    <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">${sprintPriorityChip(t.priority)}${sprintStatusChip(t.status)}</div>
+
+/* ---- Painel de detalhes da task (título, campos, subtasks, anexos, histórico) ---- */
+function openTaskDetailPanel(id){
+  window._currentTaskId = id;
+  renderTaskDetailPanel();
+  document.getElementById('taskDetailOverlay').classList.add('open');
+}
+function closeTaskDetailPanel(){
+  // remove tasks em branco criadas e nunca preenchidas, para não acumular lixo
+  const task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  if(task && !task.title.trim() && !task.description.trim() && !task.habilitador.trim()){
+    SPRINT2.tasks = SPRINT2.tasks.filter(t=>t.id!==task.id);
+    SprintDB.remove('tasks', task.id);
+    renderKanbanBoard(); renderSprintDashboard(); renderSprintDashboardExtra();
+  }
+  document.getElementById('taskDetailOverlay').classList.remove('open');
+  window._currentTaskId = null;
+}
+function renderTaskDetailPanel(){
+  const panel = document.getElementById('taskDetailPanel');
+  let task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  if(!task){
+    task = {
+      id:uid(), title:'', description:'', category:SPRINT_CATEGORIES[0], habilitador:'',
+      sprintId: SPRINT2.selectedSprintId||'', responsavel:'', priority:'media', status:'nao_iniciado',
+      dueDate: todayISO(), attachments:[], subtasks:[],
+      history:[{date:new Date().toISOString(), type:'criação', text:'Task criada.'}],
+      createdAt:new Date().toISOString(),
+    };
+    SPRINT2.tasks.push(task);
+    SprintDB.put('tasks', task);
+    window._currentTaskId = task.id;
+  }
+  const sprintOptions = `<option value="">Sem sprint</option>` + SPRINT2.sprints.map(s=>`<option value="${s.id}" ${task.sprintId===s.id?'selected':''}>${s.name}</option>`).join('');
+  panel.innerHTML = `
+    <div class="panel-head"><h3>Detalhes da task</h3><button class="panel-close" onclick="closeTaskDetailPanel()">✕</button></div>
+    <div class="field"><label class="field-label">Título</label><input type="text" value="${escAttr(task.title)}" placeholder="Título da task" onchange="updateTaskField('title', this.value, 'Título')"></div>
+    <div class="field-row">
+      <div class="field"><label class="field-label">Categoria</label><select onchange="updateTaskField('category', this.value, 'Categoria')">${SPRINT_CATEGORIES.map(c=>`<option ${task.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="field"><label class="field-label">Habilitador</label><input type="text" value="${escAttr(task.habilitador)}" placeholder="Texto livre" onchange="updateTaskField('habilitador', this.value, 'Habilitador')"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label class="field-label">Sprint vinculada</label><select onchange="updateTaskField('sprintId', this.value, 'Sprint')">${sprintOptions}</select></div>
+      <div class="field"><label class="field-label">Responsável</label><input type="text" value="${escAttr(task.responsavel)}" onchange="updateTaskField('responsavel', this.value, 'Responsável')"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label class="field-label">Prioridade</label><div class="priority-select" id="td_priority">${Object.entries(SPRINT2_PRIORITY).map(([k,p])=>`<button type="button" class="pill-choice ${task.priority===k?'active':''}" style="color:${p.color}" onclick="pickCat(this,'td_priority'); updateTaskField('priority','${k}','Prioridade')">${p.label}</button>`).join('')}</div></div>
+      <div class="field"><label class="field-label">Data de entrega</label><input type="date" value="${task.dueDate||''}" onchange="updateTaskField('dueDate', this.value, 'Data de entrega')"></div>
+    </div>
+    <div class="field"><label class="field-label">Status</label><div class="priority-select" id="td_status">${Object.entries(SPRINT2_STATUS).map(([k,s])=>`<button type="button" class="pill-choice ${task.status===k?'active':''}" style="color:${s.color}" onclick="pickCat(this,'td_status'); updateTaskField('status','${k}','Status')">${s.label}</button>`).join('')}</div></div>
+    <div class="field"><label class="field-label">Descrição (documento operacional)</label><textarea rows="8" placeholder="Detalhes, contexto, links, decisões..." onchange="updateTaskField('description', this.value, 'Descrição')">${escHtml(task.description)}</textarea></div>
+
+    <div class="divider"></div>
+    <div class="section-title"><h3>📎 Anexos</h3></div>
+    <input type="file" id="td_fileInput" multiple accept=".pdf,.xlsx,.docx,.png,.jpg,.jpeg,.zip" class="hidden" onchange="handleAttachmentUpload(event)">
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('td_fileInput').click()">+ adicionar anexo</button>
+    <div id="td_attachments" style="margin-top:10px;">${renderAttachmentsHtml(task)}</div>
+
+    <div class="divider"></div>
+    <div class="section-title"><h3>✅ Subtasks / Etapas</h3><button class="btn btn-soft btn-sm" onclick="addSubtask()">+ subtask</button></div>
+    <div id="td_subtasks">${renderSubtasksHtml(task)}</div>
+
+    <div class="divider"></div>
+    <div class="section-title"><h3>🕓 Histórico</h3></div>
+    <div id="td_history">${renderHistoryHtml(task)}</div>
+
+    <div class="divider"></div>
+    <button class="btn btn-danger btn-sm" onclick="deleteTaskEntity()">Excluir task</button>
+  `;
+}
+async function updateTaskField(field, value, label){
+  const task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  if(!task) return;
+  const oldDisplay = field==='sprintId' ? (SPRINT2.sprints.find(s=>s.id===task.sprintId)?.name || 'Sem sprint') : task[field];
+  task[field] = value;
+  const newDisplay = field==='sprintId' ? (SPRINT2.sprints.find(s=>s.id===value)?.name || 'Sem sprint') : value;
+  if(['status','sprintId','category','habilitador','dueDate'].includes(field)){
+    const labelMap = {status:'Status', sprintId:'Sprint', category:'Categoria', habilitador:'Habilitador', dueDate:'Data de entrega'};
+    fieldChangeLog(task, labelMap[field]||label, oldDisplay, newDisplay);
+  }
+  await SprintDB.put('tasks', task);
+  renderKanbanBoard();
+  renderSprintDashboard();
+  renderSprintDashboardExtra();
+  const histEl = document.getElementById('td_history');
+  if(histEl) histEl.innerHTML = renderHistoryHtml(task);
+}
+async function deleteTaskEntity(){
+  if(!confirm('Excluir esta task e todas as subtasks?')) return;
+  const id = window._currentTaskId;
+  SPRINT2.tasks = SPRINT2.tasks.filter(t=>t.id!==id);
+  await SprintDB.remove('tasks', id);
+  document.getElementById('taskDetailOverlay').classList.remove('open');
+  window._currentTaskId = null;
+  toast('Task excluída');
+  renderSprints();
+}
+
+/* ---- Anexos ---- */
+function attachmentRowHtml(att, subtaskId){
+  return `<div class="attachment-row">
+    <span class="att-icon">${fileIcon(att.type)}</span>
+    <span class="att-name">${escHtml(att.name)}</span>
+    <a href="${att.dataUrl}" download="${escAttr(att.name)}" class="btn btn-ghost btn-sm" style="padding:3px 8px; font-size:10px;">baixar</a>
+    <button class="btn btn-icon btn-sm" style="width:22px;height:22px;" onclick="removeAttachment('${subtaskId||''}','${att.id}')">✕</button>
   </div>`;
 }
-function renderSprints(){
-  const names = allSprintNames();
-  if(!window._sprintTabSelected || !names.includes(window._sprintTabSelected)){
-    window._sprintTabSelected = currentSprintName() && names.includes(currentSprintName()) ? currentSprintName() : (names[names.length-1] || '');
+function renderAttachmentsHtml(task){
+  if(!task.attachments.length) return `<div class="empty-state" style="padding:10px;">Nenhum anexo.</div>`;
+  return task.attachments.map(a=>attachmentRowHtml(a,'')).join('');
+}
+async function handleAttachmentUpload(e){
+  const task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  const files = [...e.target.files];
+  for(const file of files){
+    const dataUrl = await fileToDataUrl(file);
+    task.attachments.push({id:uid(), name:file.name, type:file.type, size:file.size, dataUrl});
   }
-  const sel = window._sprintTabSelected;
-
-  document.getElementById('sprintTabsRow').innerHTML = names.length ? names.map(n=>
-    `<button type="button" class="pill-choice ${n===sel?'active':''}" onclick="window._sprintTabSelected='${n.replace(/'/g,"\\'")}'; renderSprints();">${n===currentSprintName()?'⭐ ':''}${n}</button>`
-  ).join('') : `<span style="font-size:12.5px; color:var(--text-faint);">Nenhuma sprint criada ainda — clique em "+ nova sprint" ou "+ nova task".</span>`;
-
-  if(!sel){ document.getElementById('sprintCurrentBar').innerHTML=''; document.getElementById('sprintBoard').innerHTML=''; return; }
-
-  const range = parseSprintDateRange(sel);
-  const rangeTxt = range ? `${pad2(range.start.getDate())}/${pad2(range.start.getMonth()+1)} a ${pad2(range.end.getDate())}/${pad2(range.end.getMonth()+1)}` : null;
-  document.getElementById('sprintCurrentBar').innerHTML = `
-    <div class="gcal-status" style="justify-content:space-between; flex-wrap:wrap; gap:8px;">
-      <span>${range ? `📅 ${rangeTxt} — aparece automaticamente no Dia e na Semana durante esse período.` : '⚠️ Não consegui identificar as datas desta sprint pelo nome (formato esperado: "... DD/MM a DD/MM").'} ${sel===currentSprintName()?' · ⭐ marcada como atual':''}</span>
-      ${sel!==currentSprintName() ? `<button class="btn btn-soft btn-sm" onclick="setCurrentSprint('${sel.replace(/'/g,"\\'")}')">Marcar como atual (reserva)</button>` : ''}
-    </div>`;
-
-  const tasks = sprintTasksFor(sel);
-  if(!tasks.length){ document.getElementById('sprintBoard').innerHTML = `<div class="card card-pad"><div class="empty-state"><span>🚀</span>Nenhuma task nesta sprint ainda.</div></div>`; return; }
-
-  // agrupa por Macro > Épico, mantendo a ordenação por prioridade já aplicada dentro de cada grupo
-  const macros = {};
-  tasks.forEach(t=>{
-    const macro = t.macro || 'Sem macro definido';
-    const epico = t.epico || 'Sem épico definido';
-    macros[macro] = macros[macro] || {};
-    macros[macro][epico] = macros[macro][epico] || [];
-    macros[macro][epico].push(t);
-  });
-
-  let html = '';
-  Object.entries(macros).forEach(([macro, epicos])=>{
-    html += `<div class="card card-pad" style="margin-bottom:16px;"><h3 style="font-size:16px; margin-bottom:12px;">📦 ${macro}</h3>`;
-    Object.entries(epicos).forEach(([epico, list])=>{
-      html += `<div style="margin-bottom:14px;"><p style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-faint); margin-bottom:8px;">🏳️ ${epico}</p>`;
-      list.forEach(t=> html += sprintTaskRowHtml(t));
-      html += `</div>`;
-    });
-    html += `</div>`;
-  });
-  document.getElementById('sprintBoard').innerHTML = html;
+  if(files.length) logHistory(task, 'anexo', `${files.length} anexo(s) adicionado(s).`);
+  await SprintDB.put('tasks', task);
+  document.getElementById('td_attachments').innerHTML = renderAttachmentsHtml(task);
+  document.getElementById('td_history').innerHTML = renderHistoryHtml(task);
+  e.target.value = '';
 }
-function buildSprintDatalists(){
-  const macros = [...new Set(Store.sprintTasks().map(t=>t.macro).filter(Boolean))];
-  const epicos = [...new Set(Store.sprintTasks().map(t=>t.epico).filter(Boolean))];
-  document.getElementById('sprintMacroList').innerHTML = macros.map(m=>`<option value="${m}">`).join('');
-  document.getElementById('sprintEpicoList').innerHTML = epicos.map(e=>`<option value="${e}">`).join('');
-  document.getElementById('sprintNameList').innerHTML = allSprintNames().map(n=>`<option value="${n}">`).join('');
-}
-function openSprintTaskModal(id){
-  buildSprintDatalists();
-  document.getElementById('sprintTaskModalTitle').textContent = id ? 'Editar task' : 'Nova task de sprint';
-  document.getElementById('sprintTaskDeleteBtn').classList.toggle('hidden', !id);
-  const statusEl = document.getElementById('sprintTaskStatusSelect');
-  const prioEl = document.getElementById('sprintTaskPrioritySelect');
-  if(id){
-    const t = Store.sprintTasks().find(x=>x.id===id);
-    document.getElementById('sprintTaskId').value = t.id;
-    document.getElementById('sprintTaskTitle').value = t.title;
-    document.getElementById('sprintTaskMacro').value = t.macro||'';
-    document.getElementById('sprintTaskEpico').value = t.epico||'';
-    document.getElementById('sprintTaskMarco').value = t.marco||'';
-    document.getElementById('sprintTaskSprint').value = t.sprint||(window._sprintTabSelected||'');
-    document.getElementById('sprintTaskResponsavel').value = t.responsavel||'';
-    document.getElementById('sprintTaskNotes').value = t.notes||'';
-    statusEl.innerHTML = Object.entries(SPRINT_STATUS).map(([k,s])=>`<button type="button" class="pill-choice ${t.status===k?'active':''}" style="color:${s.color}" data-cat="${k}" onclick="pickCat(this,'sprintTaskStatusSelect')">${s.label}</button>`).join('');
-    prioEl.innerHTML = Object.entries(SPRINT_PRIORITY).map(([k,p])=>`<button type="button" class="pill-choice ${t.priority===k?'active':''}" style="color:${p.color}" data-cat="${k}" onclick="pickCat(this,'sprintTaskPrioritySelect')">${p.label}</button>`).join('');
+async function removeAttachment(subtaskId, attId){
+  const task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  if(subtaskId){
+    const st = task.subtasks.find(s=>s.id===subtaskId);
+    st.attachments = (st.attachments||[]).filter(a=>a.id!==attId);
+    logHistory(task, 'anexo', `Anexo removido da subtask "${st.title}".`);
   } else {
-    document.getElementById('sprintTaskId').value = '';
-    document.getElementById('sprintTaskTitle').value = '';
-    document.getElementById('sprintTaskMacro').value = '';
-    document.getElementById('sprintTaskEpico').value = '';
-    document.getElementById('sprintTaskMarco').value = '';
-    document.getElementById('sprintTaskSprint').value = window._sprintTabSelected || currentSprintName() || '';
-    document.getElementById('sprintTaskResponsavel').value = 'Stela';
-    document.getElementById('sprintTaskNotes').value = '';
-    statusEl.innerHTML = Object.entries(SPRINT_STATUS).map(([k,s])=>`<button type="button" class="pill-choice ${k==='nao_iniciado'?'active':''}" style="color:${s.color}" data-cat="${k}" onclick="pickCat(this,'sprintTaskStatusSelect')">${s.label}</button>`).join('');
-    prioEl.innerHTML = Object.entries(SPRINT_PRIORITY).map(([k,p])=>`<button type="button" class="pill-choice ${k==='media'?'active':''}" style="color:${p.color}" data-cat="${k}" onclick="pickCat(this,'sprintTaskPrioritySelect')">${p.label}</button>`).join('');
+    task.attachments = task.attachments.filter(a=>a.id!==attId);
+    logHistory(task, 'anexo', 'Anexo removido.');
   }
-  document.getElementById('sprintTaskModalOverlay').classList.add('open');
+  await SprintDB.put('tasks', task);
+  renderTaskDetailPanel();
 }
-function closeSprintTaskModal(){ document.getElementById('sprintTaskModalOverlay').classList.remove('open'); }
-function saveSprintTaskFromModal(){
-  const title = document.getElementById('sprintTaskTitle').value.trim();
-  if(!title){ toast('Dê um título à task'); return; }
-  const sprint = document.getElementById('sprintTaskSprint').value.trim();
-  if(!sprint){ toast('Informe a sprint desta task'); return; }
-  const id = document.getElementById('sprintTaskId').value;
-  const list = Store.sprintTasks();
-  const data = {
-    title,
-    macro: document.getElementById('sprintTaskMacro').value.trim(),
-    epico: document.getElementById('sprintTaskEpico').value.trim(),
-    marco: document.getElementById('sprintTaskMarco').value.trim(),
-    sprint,
-    responsavel: document.getElementById('sprintTaskResponsavel').value.trim(),
-    status: getPickedCat('sprintTaskStatusSelect'),
-    priority: getPickedCat('sprintTaskPrioritySelect'),
-    notes: document.getElementById('sprintTaskNotes').value,
-  };
-  if(id){ const idx = list.findIndex(t=>t.id===id); list[idx] = {...list[idx], ...data}; }
-  else list.push({id:uid(), ...data});
-  Store.saveSprintTasks(list);
-  window._sprintTabSelected = sprint;
-  closeSprintTaskModal();
-  toast('Task salva 🚀');
-  if(currentView==='sprints') renderSprints();
-  if(currentView==='calendar') renderCalendar();
-  if(currentView==='home') renderHome();
+
+/* ---- Subtasks ---- */
+function renderSubtasksHtml(task){
+  if(!task.subtasks.length) return `<div class="empty-state" style="padding:14px;">Nenhuma subtask ainda.</div>`;
+  return task.subtasks.map(st=>`
+    <div class="subtask-card">
+      <div style="display:flex; justify-content:space-between; gap:8px;">
+        <input type="text" value="${escAttr(st.title)}" style="border:none; background:transparent; font-weight:700; font-size:12.5px; flex:1; padding:2px 0;" onchange="updateSubtaskField('${st.id}','title',this.value)">
+        <button class="btn btn-icon btn-sm" style="width:24px;height:24px;" onclick="deleteSubtask('${st.id}')">✕</button>
+      </div>
+      <div class="field-row" style="margin-top:6px;">
+        <input type="text" placeholder="Habilitador" value="${escAttr(st.habilitador)}" style="font-size:11.5px;" onchange="updateSubtaskField('${st.id}','habilitador',this.value)">
+        <input type="date" value="${st.dueDate||''}" style="font-size:11.5px;" onchange="updateSubtaskField('${st.id}','dueDate',this.value)">
+      </div>
+      <textarea placeholder="Descrição detalhada" style="margin-top:6px; font-size:11.5px; min-height:50px;" onchange="updateSubtaskField('${st.id}','description',this.value)">${escHtml(st.description)}</textarea>
+      <div style="display:flex; gap:4px; margin-top:8px; flex-wrap:wrap;">${Object.entries(SPRINT2_STATUS).map(([k,s])=>`<button type="button" class="pill-choice ${st.status===k?'active':''}" style="color:${s.color}; padding:3px 9px; font-size:10.5px;" onclick="updateSubtaskStatus('${st.id}','${k}', this)">${s.label}</button>`).join('')}</div>
+      <input type="file" class="hidden" id="subfile_${st.id}" accept=".pdf,.xlsx,.docx,.png,.jpg,.jpeg,.zip" onchange="handleSubtaskAttachmentUpload(event,'${st.id}')">
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px; font-size:10.5px; padding:4px 10px;" onclick="document.getElementById('subfile_${st.id}').click()">+ anexo</button>
+      <div style="margin-top:6px;">${(st.attachments||[]).map(a=>attachmentRowHtml(a, st.id)).join('')}</div>
+    </div>
+  `).join('');
 }
-function deleteSprintTaskFromModal(){
-  const id = document.getElementById('sprintTaskId').value;
-  Store.saveSprintTasks(Store.sprintTasks().filter(t=>t.id!==id));
-  closeSprintTaskModal();
-  toast('Task removida');
-  if(currentView==='sprints') renderSprints();
-  if(currentView==='calendar') renderCalendar();
+async function addSubtask(){
+  const task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  task.subtasks.push({id:uid(), title:'Nova etapa', habilitador:'', description:'', status:'nao_iniciado', dueDate:'', attachments:[]});
+  logHistory(task, 'subtask', 'Subtask criada.');
+  await SprintDB.put('tasks', task);
+  document.getElementById('td_subtasks').innerHTML = renderSubtasksHtml(task);
+  document.getElementById('td_history').innerHTML = renderHistoryHtml(task);
 }
-// Card "Tarefas da sprint" reutilizado no Dia e na Semana — mostra a sprint marcada como atual
+async function updateSubtaskField(subId, field, value){
+  const task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  const st = task.subtasks.find(s=>s.id===subId);
+  st[field] = value;
+  await SprintDB.put('tasks', task);
+}
+async function updateSubtaskStatus(subId, status, btn){
+  const task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  const st = task.subtasks.find(s=>s.id===subId);
+  const wasCompleted = st.status==='concluida';
+  st.status = status;
+  if(status==='concluida' && !wasCompleted) logHistory(task, 'subtask', `Subtask "${st.title}" concluída.`);
+  if(btn){ btn.parentElement.querySelectorAll('.pill-choice').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+  await SprintDB.put('tasks', task);
+  document.getElementById('td_history').innerHTML = renderHistoryHtml(task);
+}
+async function deleteSubtask(subId){
+  const task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  const st = task.subtasks.find(s=>s.id===subId);
+  task.subtasks = task.subtasks.filter(s=>s.id!==subId);
+  logHistory(task, 'subtask', `Subtask "${st?st.title:''}" removida.`);
+  await SprintDB.put('tasks', task);
+  document.getElementById('td_subtasks').innerHTML = renderSubtasksHtml(task);
+  document.getElementById('td_history').innerHTML = renderHistoryHtml(task);
+}
+async function handleSubtaskAttachmentUpload(e, subId){
+  const task = SPRINT2.tasks.find(t=>t.id===window._currentTaskId);
+  const st = task.subtasks.find(s=>s.id===subId);
+  const files = [...e.target.files];
+  for(const file of files){
+    const dataUrl = await fileToDataUrl(file);
+    st.attachments = st.attachments || [];
+    st.attachments.push({id:uid(), name:file.name, type:file.type, size:file.size, dataUrl});
+  }
+  if(files.length) logHistory(task, 'anexo', `Anexo adicionado à subtask "${st.title}".`);
+  await SprintDB.put('tasks', task);
+  document.getElementById('td_subtasks').innerHTML = renderSubtasksHtml(task);
+  document.getElementById('td_history').innerHTML = renderHistoryHtml(task);
+  e.target.value='';
+}
+
+/* ---- Histórico ---- */
+function renderHistoryHtml(task){
+  if(!task.history || !task.history.length) return `<div class="empty-state" style="padding:10px;">Sem histórico ainda.</div>`;
+  return [...task.history].reverse().map(h=>`
+    <div class="history-item"><div class="h-dot"></div><div><div style="color:var(--text-soft);">${escHtml(h.text)}</div><div style="font-size:10.5px; color:var(--text-faint); margin-top:2px;">${new Date(h.date).toLocaleString('pt-BR')}</div></div></div>
+  `).join('');
+}
+
+/* ---- Kanban board + drag and drop ---- */
+function getFilteredTasks(){
+  let tasks = SPRINT2.tasks;
+  if(SPRINT2.selectedSprintId) tasks = tasks.filter(t=>t.sprintId===SPRINT2.selectedSprintId);
+  const f = SPRINT2.filters;
+  if(f.categoria) tasks = tasks.filter(t=>t.category===f.categoria);
+  if(f.status) tasks = tasks.filter(t=>t.status===f.status);
+  if(f.prioridade) tasks = tasks.filter(t=>t.priority===f.prioridade);
+  if(f.habilitador) tasks = tasks.filter(t=>(t.habilitador||'').toLowerCase().includes(f.habilitador.toLowerCase()));
+  if(f.responsavel) tasks = tasks.filter(t=>(t.responsavel||'').toLowerCase().includes(f.responsavel.toLowerCase()));
+  return tasks;
+}
+function sprintPriorityChipV2(key){ const p=SPRINT2_PRIORITY[key]||SPRINT2_PRIORITY.media; return `<span class="chip" style="background:${p.color}22; color:${p.color}">${p.label}</span>`; }
+function kanbanCardHtml(task){
+  const cat = SPRINT_CATEGORIES.includes(task.category) ? task.category : SPRINT_CATEGORIES[0];
+  const p = SPRINT2_PRIORITY[task.priority]||SPRINT2_PRIORITY.media;
+  const overdue = isOverdue(task);
+  return `<div class="kanban-card" draggable="true" data-id="${task.id}" ondragstart="onCardDragStart(event)" ondragend="onCardDragEnd(event)" onclick="openTaskDetailPanel('${task.id}')">
+    <div class="kc-title">${escHtml(task.title)||'(sem título)'}</div>
+    <div class="kc-meta">
+      <span class="badge-soft">${cat}</span>
+      <span class="chip" style="background:${p.color}22; color:${p.color}">${p.label}</span>
+      ${task.dueDate?`<span class="badge-soft ${overdue?'kc-overdue':''}">${overdue?'⚠️ ':''}${formatBirthdayDate(task.dueDate)}</span>`:''}
+      ${task.responsavel?`<span class="badge-soft">👤 ${escHtml(task.responsavel)}</span>`:''}
+      ${task.subtasks.length?`<span class="badge-soft">☑ ${task.subtasks.filter(s=>s.status==='concluida').length}/${task.subtasks.length}</span>`:''}
+    </div>
+  </div>`;
+}
+function renderKanbanBoard(){
+  const tasks = getFilteredTasks();
+  const board = document.getElementById('kanbanBoard');
+  if(!board) return;
+  board.innerHTML = KANBAN_COLUMNS.map(colKey=>{
+    const colTasks = tasks.filter(t=>t.status===colKey).sort((a,b)=>(SPRINT2_PRIORITY[a.priority]?.order??9)-(SPRINT2_PRIORITY[b.priority]?.order??9));
+    const s = SPRINT2_STATUS[colKey];
+    return `<div class="kanban-column" data-status="${colKey}" ondragover="onColDragOver(event)" ondragleave="onColDragLeave(event)" ondrop="onColDrop(event)">
+      <div class="kanban-column-head"><h4>${s.label}</h4><span class="badge-soft">${colTasks.length}</span></div>
+      <div class="kanban-cards">${colTasks.map(kanbanCardHtml).join('') || '<div class="empty-state" style="padding:20px 6px;">Nada aqui</div>'}</div>
+    </div>`;
+  }).join('');
+}
+let _draggedTaskId = null;
+function onCardDragStart(e){ _draggedTaskId = e.currentTarget.dataset.id; e.currentTarget.classList.add('dragging'); }
+function onCardDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
+function onColDragOver(e){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function onColDragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
+async function onColDrop(e){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const newStatus = e.currentTarget.dataset.status;
+  const task = SPRINT2.tasks.find(t=>t.id===_draggedTaskId);
+  if(task && task.status!==newStatus){
+    const oldLabel = SPRINT2_STATUS[task.status]?.label;
+    task.status = newStatus;
+    logHistory(task, 'status', `Status: "${oldLabel}" → "${SPRINT2_STATUS[newStatus].label}"`);
+    await SprintDB.put('tasks', task);
+    renderKanbanBoard();
+    renderSprintDashboard();
+    renderSprintDashboardExtra();
+  }
+}
+
+/* ---- Sidebar: lista de sprints + filtros ---- */
+function renderSprintListNav(){
+  const el = document.getElementById('sprintListNav');
+  if(!el) return;
+  const sorted = [...SPRINT2.sprints].sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||''));
+  let html = `<div class="sprint-list-item ${!SPRINT2.selectedSprintId?'active':''}" onclick="selectSprint('')">🗂️ Todas as sprints</div>`;
+  html += sorted.map(s=>{
+    const status = sprintEntityStatusFor(s);
+    const st = SPRINT_ENTITY_STATUS[status];
+    return `<div class="sprint-list-item ${SPRINT2.selectedSprintId===s.id?'active':''}">
+      <span onclick="selectSprint('${s.id}')" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(s.name)}</span>
+      <span class="dot" style="background:${st.color}; width:8px; height:8px;" title="${st.label}"></span>
+      <button class="btn btn-icon btn-sm" style="width:22px;height:22px;" onclick="event.stopPropagation(); openSprintModal('${s.id}')">✎</button>
+    </div>`;
+  }).join('');
+  el.innerHTML = html;
+}
+function selectSprint(id){
+  SPRINT2.selectedSprintId = id;
+  const sp = SPRINT2.sprints.find(s=>s.id===id);
+  document.getElementById('sprintBoardTitle').textContent = sp ? sp.name : 'Todas as sprints';
+  renderSprintListNav();
+  renderKanbanBoard();
+}
+function clearSprintFilters(){
+  SPRINT2.filters = {categoria:'',status:'',prioridade:'',habilitador:'',responsavel:''};
+  ['filterCategoria','filterStatus','filterPrioridade','filterHabilitador','filterResponsavel'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  renderKanbanBoard();
+}
+function wireSprintFilterInputs(){
+  const catSel = document.getElementById('filterCategoria');
+  const statusSel = document.getElementById('filterStatus');
+  const prioSel = document.getElementById('filterPrioridade');
+  if(catSel.options.length<=1) catSel.innerHTML = '<option value="">Todas</option>' + SPRINT_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');
+  if(statusSel.options.length<=1) statusSel.innerHTML = '<option value="">Todos</option>' + Object.entries(SPRINT2_STATUS).map(([k,s])=>`<option value="${k}">${s.label}</option>`).join('');
+  if(prioSel.options.length<=1) prioSel.innerHTML = '<option value="">Todas</option>' + Object.entries(SPRINT2_PRIORITY).map(([k,p])=>`<option value="${k}">${p.label}</option>`).join('');
+  catSel.onchange = (e)=>{ SPRINT2.filters.categoria = e.target.value; renderKanbanBoard(); };
+  statusSel.onchange = (e)=>{ SPRINT2.filters.status = e.target.value; renderKanbanBoard(); };
+  prioSel.onchange = (e)=>{ SPRINT2.filters.prioridade = e.target.value; renderKanbanBoard(); };
+  document.getElementById('filterHabilitador').oninput = (e)=>{ SPRINT2.filters.habilitador = e.target.value; renderKanbanBoard(); };
+  document.getElementById('filterResponsavel').oninput = (e)=>{ SPRINT2.filters.responsavel = e.target.value; renderKanbanBoard(); };
+}
+
+/* ---- Dashboard ---- */
+function renderSprintDashboard(){
+  const el = document.getElementById('sprintDashboard');
+  if(!el) return;
+  const tasks = SPRINT2.tasks;
+  const overdue = tasks.filter(isOverdue);
+  el.innerHTML = `
+    ${statCard(tasks.length, 'tasks no total', '📋')}
+    ${statCard(tasks.filter(t=>t.status==='em_andamento').length, 'em andamento', '🚧')}
+    ${statCard(overdue.length, 'atrasadas', '⚠️')}
+    ${statCard(SPRINT2.sprints.filter(s=>sprintEntityStatusFor(s)==='em_andamento').length, 'sprints ativas', '🚀')}
+  `;
+}
+function renderSprintDashboardExtra(){
+  const el = document.getElementById('sprintDashboardExtra');
+  if(!el) return;
+  const tasks = SPRINT2.tasks;
+  const upcoming = tasks.filter(t=>t.dueDate && t.dueDate>=todayISO() && t.status!=='concluida' && t.status!=='cancelada').sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,6);
+  const catCounts = {}; SPRINT_CATEGORIES.forEach(c=>catCounts[c]=0);
+  tasks.forEach(t=>{ if(catCounts[t.category]!==undefined) catCounts[t.category]++; });
+  const maxCat = Math.max(1,...Object.values(catCounts));
+  el.innerHTML = `
+    <div class="card card-pad">
+      <div class="section-title"><h3>📅 Próximas entregas</h3></div>
+      ${upcoming.length? upcoming.map(t=>`<div class="list-item" style="cursor:pointer" onclick="openTaskDetailPanel('${t.id}')"><div class="content"><div class="title" style="font-size:12.5px;">${escHtml(t.title)}</div><div class="meta">${t.category} · ${formatBirthdayDate(t.dueDate)}</div></div>${sprintPriorityChipV2(t.priority)}</div>`).join('') : '<div class="empty-state">Nada agendado.</div>'}
+    </div>
+    <div class="card card-pad">
+      <div class="section-title"><h3>📊 Tasks por categoria</h3></div>
+      ${Object.entries(catCounts).map(([c,n])=>`<div class="bar-chart-row"><div class="lbl">${c}</div><div class="track"><div class="fill" style="width:${(n/maxCat*100)}%; background:var(--primary)"></div></div><div class="val">${n}</div></div>`).join('')}
+    </div>
+  `;
+}
+
+/* ---- Entrypoint chamado pelo switchView ---- */
+async function renderSprints(){
+  if(!SPRINT2.loaded && !SPRINT2.unavailable){
+    const board = document.getElementById('kanbanBoard');
+    if(board) board.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">Carregando...</div>`;
+    await loadSprintCache();
+  }
+  if(SPRINT2.unavailable){
+    document.getElementById('kanbanBoard').innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><span>⚠️</span>Este navegador não permite IndexedDB agora (comum em modo privado/anônimo) — os Sprints 2.0 ficam indisponíveis nesta sessão, mas o resto do app funciona normalmente.</div>`;
+    document.getElementById('sprintListNav').innerHTML = '';
+    document.getElementById('sprintDashboard').innerHTML = '';
+    document.getElementById('sprintDashboardExtra').innerHTML = '';
+    return;
+  }
+  wireSprintFilterInputs();
+  renderSprintDashboard();
+  renderSprintDashboardExtra();
+  renderSprintListNav();
+  const sp = SPRINT2.sprints.find(s=>s.id===SPRINT2.selectedSprintId);
+  document.getElementById('sprintBoardTitle').textContent = sp ? sp.name : 'Todas as sprints';
+  renderKanbanBoard();
+}
+
+/* ---- Card "Tarefas da sprint" (Dia/Semana) — orientado por data ---- */
+function sprintsForDateRangeV2(rangeStart, rangeEnd){
+  const rs = dateKey(rangeStart), re = dateKey(rangeEnd);
+  return SPRINT2.sprints.filter(s=> s.startDate && s.endDate && s.startDate<=re && s.endDate>=rs);
+}
+function sprintTaskRowHtmlV2(t){
+  const faded = t.status==='concluida' || t.status==='cancelada';
+  const p = SPRINT2_PRIORITY[t.priority]||SPRINT2_PRIORITY.media;
+  const s = SPRINT2_STATUS[t.status]||SPRINT2_STATUS.nao_iniciado;
+  return `<div class="list-item" style="cursor:pointer; ${faded?'opacity:.5;':''}" onclick="openTaskDetailPanel('${t.id}')">
+    <div class="content"><div class="title" style="${faded?'text-decoration:line-through;':''}">${escHtml(t.title)}${t.habilitador?` <span class="badge-soft">🏁 ${escHtml(t.habilitador)}</span>`:''}</div><div class="meta">👤 ${escHtml(t.responsavel)||'—'}</div></div>
+    <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;"><span class="chip" style="background:${p.color}22; color:${p.color}">${p.label}</span><span class="chip" style="background:${s.color}22; color:${s.color}">${s.label}</span></div>
+  </div>`;
+}
 function sprintTasksCardHtml(dateOrRange){
+  if(!SPRINT2.loaded) return '';
   const rangeStart = dateOrRange instanceof Date ? dateOrRange : dateOrRange.start;
   const rangeEnd = dateOrRange instanceof Date ? dateOrRange : dateOrRange.end;
-  let sprintNames = sprintsForDateRange(rangeStart, rangeEnd);
-  // fallback: se nenhuma sprint com data reconhecível cobre o período, usa a sprint marcada manualmente como atual
-  if(!sprintNames.length && currentSprintName()) sprintNames = [currentSprintName()];
-  if(!sprintNames.length) return '';
-
-  const sectionsHtml = sprintNames.map(sprintName=>{
-    const tasks = sprintTasksFor(sprintName);
+  const sprints = sprintsForDateRangeV2(rangeStart, rangeEnd);
+  if(!sprints.length) return '';
+  const sectionsHtml = sprints.map(sp=>{
+    const tasks = SPRINT2.tasks.filter(t=>t.sprintId===sp.id).sort((a,b)=>(SPRINT2_PRIORITY[a.priority]?.order??9)-(SPRINT2_PRIORITY[b.priority]?.order??9));
     if(!tasks.length) return '';
-    const macros = {};
-    tasks.forEach(t=>{
-      const macro = t.macro || 'Sem macro definido';
-      const epico = t.epico || 'Sem épico definido';
-      macros[macro] = macros[macro] || {};
-      macros[macro][epico] = macros[macro][epico] || [];
-      macros[macro][epico].push(t);
-    });
-    let inner = sprintNames.length>1 ? `<p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--primary-deep); margin:14px 0 6px;">🚀 ${sprintName}</p>` : '';
-    Object.entries(macros).forEach(([macro,epicos])=>{
-      inner += `<p style="font-size:12px; font-weight:700; margin:10px 0 6px;">📦 ${macro}</p>`;
-      Object.entries(epicos).forEach(([epico,list])=>{
-        inner += `<p style="font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:var(--text-faint); margin:8px 0 4px 6px;">🏳️ ${epico}</p>`;
-        list.forEach(t=> inner += `<div style="margin-left:6px;">${sprintTaskRowHtml(t)}</div>`);
-      });
+    let inner = sprints.length>1 ? `<p style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--primary-deep); margin:14px 0 6px;">🚀 ${escHtml(sp.name)}</p>` : '';
+    const groups = {};
+    tasks.forEach(t=>{ groups[t.category]=groups[t.category]||[]; groups[t.category].push(t); });
+    Object.entries(groups).forEach(([cat,list])=>{
+      inner += `<p style="font-size:12px; font-weight:700; margin:10px 0 6px;">📦 ${cat}</p>`;
+      list.forEach(t=> inner += sprintTaskRowHtmlV2(t));
     });
     return inner;
   }).join('');
-
   const body = sectionsHtml || `<div class="empty-state"><span>🚀</span>Nenhuma task nas sprints deste período.</div>`;
-  const badgeText = sprintNames.length>1 ? `${sprintNames.length} sprints nesta semana` : sprintNames[0];
+  const badgeText = sprints.length>1 ? `${sprints.length} sprints` : sprints[0].name;
   return `<div class="card card-pad" style="margin-top:18px;">
-    <div class="section-title"><h3>🚀 Tarefas da sprint</h3><span class="badge-soft">${badgeText}</span></div>
+    <div class="section-title"><h3>🚀 Tarefas da sprint</h3><span class="badge-soft">${escHtml(badgeText)}</span></div>
     ${body}
     <div class="divider"></div>
     <button class="btn btn-ghost btn-sm" onclick="switchView('sprints')">Ver todas as sprints →</button>
   </div>`;
 }
+
 
 /* ============================================================
    20. SETTINGS VIEW + GOOGLE CALENDAR STUB
@@ -4067,6 +4655,11 @@ function renderSettings(){
   document.getElementById('gcalClientId').value = s.gcalClientId||'';
   document.getElementById('gcalApiKey').value = s.gcalApiKey||'';
   updateGcalStatus();
+  renderGcalCalendarMap();
+  const cc = CloudSync.getConfig();
+  document.getElementById('cloudSyncUrl').value = cc.url||'';
+  document.getElementById('cloudSyncSecret').value = cc.secret||'';
+  updateCloudSyncStatus();
   document.getElementById('settingsCategories').innerHTML = Object.entries(CATEGORIES).map(([k,c])=>{
     const subsHtml = c.subcategories ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; padding-left:34px;">${Object.values(c.subcategories).map(s=>`<span class="chip" style="background:${s.color}22; color:${s.color}"><span class="dot" style="background:${s.color}"></span>${s.label}</span>`).join('')}</div>` : '';
     return `<div style="padding:10px 4px; border-bottom:1px solid var(--border-soft);">
@@ -4080,13 +4673,157 @@ function updateGcalStatus(){
   document.getElementById('gcalDot').classList.toggle('on', !!s.gcalConnected);
   document.getElementById('gcalStatusText').textContent = s.gcalConnected ? 'Conectado ao Google Calendar' : 'Não conectado';
 }
+function updateCloudSyncStatus(){
+  const configured = CloudSync.isConfigured();
+  document.getElementById('cloudSyncDot').classList.toggle('on', configured);
+  document.getElementById('cloudSyncStatusText').textContent = configured ? 'Conectado — sincronizando automaticamente' : 'Não conectado';
+}
+document.getElementById('cloudSyncSaveBtn').addEventListener('click', ()=>{
+  const url = document.getElementById('cloudSyncUrl').value.trim();
+  const secret = document.getElementById('cloudSyncSecret').value.trim();
+  if(!url || !secret){ toast('Preencha a URL e a senha'); return; }
+  CloudSync.setConfig(url, secret);
+  updateCloudSyncStatus();
+  toast('Conexão salva ☁️');
+});
+document.getElementById('cloudSyncPushBtn').addEventListener('click', async ()=>{
+  if(!CloudSync.isConfigured()){ toast('Salve a conexão primeiro'); return; }
+  toast('Enviando dados para a nuvem...');
+  await CloudSync.pushAll();
+  toast('Dados enviados para a planilha ☁️');
+});
+document.getElementById('cloudSyncPullBtn').addEventListener('click', async ()=>{
+  if(!CloudSync.isConfigured()){ toast('Salve a conexão primeiro'); return; }
+  toast('Buscando dados da nuvem...');
+  const ok = await CloudSync.pullAllAndApply();
+  if(ok){ toast('Dados atualizados a partir da nuvem ☁️'); refreshCurrentView(); switchView(currentView); }
+  else toast('Não foi possível buscar da nuvem — confira URL/senha');
+});
+
+/* ---------------------------------------------------------
+   Importação de calendário Outlook/Teams via arquivo .ics
+--------------------------------------------------------- */
+function unfoldICS(text){
+  const rawLines = text.split(/\r\n|\n|\r/);
+  const lines = [];
+  rawLines.forEach(line=>{
+    if((line.startsWith(' ') || line.startsWith('\t')) && lines.length){
+      lines[lines.length-1] += line.slice(1);
+    } else {
+      lines.push(line);
+    }
+  });
+  return lines;
+}
+function parseICSDate(val){
+  const m = val.match(/^(\d{4})(\d{2})(\d{2})(T(\d{2})(\d{2})(\d{2})(Z)?)?$/);
+  if(!m) return null;
+  const allDay = !m[4];
+  const y=Number(m[1]), mo=Number(m[2])-1, d=Number(m[3]);
+  if(allDay) return {date:new Date(y,mo,d), allDay:true};
+  const h=Number(m[5]), mi=Number(m[6]), s=Number(m[7]||0);
+  if(m[8]==='Z'){
+    const utcMs = Date.UTC(y,mo,d,h,mi,s);
+    return {date:new Date(utcMs), allDay:false};
+  }
+  return {date:new Date(y,mo,d,h,mi,s), allDay:false};
+}
+function parseRRULE(rrule){
+  const parts = {};
+  rrule.split(';').forEach(p=>{ const [k,v]=p.split('='); parts[k]=v; });
+  const interval = Math.max(1, Number(parts.INTERVAL)||1);
+  const DAY_MAP = {SU:0,MO:1,TU:2,WE:3,TH:4,FR:5,SA:6};
+  if(parts.FREQ==='DAILY') return {freq:'daily', interval};
+  if(parts.FREQ==='WEEKLY'){
+    const weekdays = parts.BYDAY ? parts.BYDAY.split(',').map(d=>DAY_MAP[d]).filter(v=>v!==undefined) : [];
+    return {freq:'weekly', interval, weekdays};
+  }
+  if(parts.FREQ==='MONTHLY') return {freq:'monthly', interval};
+  return ''; // padrões não suportados (ex: YEARLY, regras complexas) — importa só a primeira ocorrência
+}
+function parseICS(text){
+  const lines = unfoldICS(text);
+  const events = [];
+  let cur = null;
+  lines.forEach(line=>{
+    if(line==='BEGIN:VEVENT'){ cur = {}; }
+    else if(line==='END:VEVENT'){ if(cur) events.push(cur); cur=null; }
+    else if(cur){
+      const idx = line.indexOf(':');
+      if(idx<0) return;
+      const rawKey = line.slice(0,idx);
+      const value = line.slice(idx+1);
+      const key = rawKey.split(';')[0];
+      cur[key] = value;
+    }
+  });
+  return events;
+}
+function icsEventToOurs(ev){
+  if(!ev.DTSTART || !ev.SUMMARY) return null;
+  const startParsed = parseICSDate(ev.DTSTART);
+  if(!startParsed) return null;
+  const endParsed = ev.DTEND ? parseICSDate(ev.DTEND) : null;
+  const key = dateKey(startParsed.date);
+  const start = startParsed.allDay ? '' : pad2(startParsed.date.getHours())+':'+pad2(startParsed.date.getMinutes());
+  const end = (endParsed && !endParsed.allDay) ? pad2(endParsed.date.getHours())+':'+pad2(endParsed.date.getMinutes()) : '';
+  const recurrence = ev.RRULE ? parseRRULE(ev.RRULE) : '';
+  return {
+    title: (ev.SUMMARY||'(sem título)').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\n/g,' '),
+    desc: (ev.DESCRIPTION||'').replace(/\\n/g,' ').replace(/\\,/g,',').slice(0,500),
+    date: key, start, end,
+    category:'rbs', priority:'media',
+    location: (ev.LOCATION||'').replace(/\\,/g,','),
+    people:'', recurrence, status:'scheduled',
+    notes:'Importado do Outlook/Teams', attachments:'', excluded:[],
+    outlookUid: ev.UID || null,
+  };
+}
+function importICSText(text){
+  let icsEvents;
+  try{ icsEvents = parseICS(text); }catch(e){ toast('Não consegui ler esse arquivo .ics'); return; }
+  const converted = icsEvents.map(icsEventToOurs).filter(Boolean);
+  if(!converted.length){ toast('Nenhum evento encontrado no arquivo'); return; }
+  const list = Store.events();
+  let added = 0, updated = 0;
+  converted.forEach(newEv=>{
+    const idx = newEv.outlookUid ? list.findIndex(e=>e.outlookUid===newEv.outlookUid) : -1;
+    if(idx>-1){ list[idx] = {...list[idx], ...newEv, id:list[idx].id}; updated++; }
+    else { list.push({id:uid(), ...newEv}); added++; }
+  });
+  Store.saveEvents(list);
+  document.getElementById('icsStatusText').textContent = `Última importação: ${added} novo(s), ${updated} atualizado(s) — ${new Date().toLocaleString('pt-BR')}`;
+  toast(`Importado: ${added} novo(s), ${updated} atualizado(s) 📆`);
+  refreshCurrentView();
+}
+document.getElementById('icsFileBtn').addEventListener('click', ()=> document.getElementById('icsFileInput').click());
+document.getElementById('icsFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('icsFileName').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = ()=> importICSText(reader.result);
+  reader.readAsText(file);
+});
+document.getElementById('icsUrlBtn').addEventListener('click', async ()=>{
+  const url = document.getElementById('icsUrlInput').value.trim();
+  if(!url){ toast('Cole o link do calendário'); return; }
+  toast('Tentando importar...');
+  try{
+    const res = await fetch(url);
+    const text = await res.text();
+    importICSText(text);
+  }catch(e){
+    toast('Não foi possível buscar por link (provavelmente bloqueio do navegador) — use a Opção 1 com o arquivo .ics');
+  }
+});
 
 /* --- Camada de integração Google Calendar (estrutura preparada) ---
    Usa Google Identity Services + gapi client. Funciona de verdade assim
    que a Stela colar seu próprio Client ID e API Key (gerados no Google
    Cloud Console, com a Calendar API ativada). */
 const GCal = {
-  tokenClient:null, gapiReady:false,
+  tokenClient:null, gapiReady:false, autoSyncTimer:null, calendars:[],
   async loadScripts(){
     if(window.gapi && window.google) return;
     await new Promise(res=>{ const s=document.createElement('script'); s.src='https://apis.google.com/js/api.js'; s.onload=res; document.head.appendChild(s); });
@@ -4099,11 +4836,14 @@ const GCal = {
       await gapi.client.init({ apiKey, discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] });
       this.tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
-        scope:'https://www.googleapis.com/auth/calendar.events',
-        callback:(resp)=>{
+        scope:'https://www.googleapis.com/auth/calendar',
+        callback: async (resp)=>{
           if(resp.error){ toast('Erro ao conectar: '+resp.error); return; }
           const s = Store.settings(); s.gcalConnected=true; s.gcalClientId=clientId; s.gcalApiKey=apiKey; Store.saveSettings(s);
           updateGcalStatus(); toast('Google Calendar conectado ✅');
+          await this.listCalendars();
+          await this.syncAll();
+          this.startAutoSync();
         }
       });
       this.tokenClient.requestAccessToken();
@@ -4112,27 +4852,75 @@ const GCal = {
       console.error(e);
     }
   },
-  async importEvents(){
-    if(!window.gapi || !gapi.client.calendar){ toast('Conecte-se primeiro.'); return; }
+  startAutoSync(){
+    if(this.autoSyncTimer) clearInterval(this.autoSyncTimer);
+    // busca mudanças a cada 5 minutos enquanto a aba estiver aberta — não é "tempo real", mas fica sempre bem próximo
+    this.autoSyncTimer = setInterval(()=> this.syncAll(true), 5*60*1000);
+  },
+  async listCalendars(){
+    if(!window.gapi || !gapi.client.calendar) return;
     try{
-      const resp = await gapi.client.calendar.events.list({calendarId:'primary', timeMin:new Date().toISOString(), maxResults:100, singleEvents:true, orderBy:'startTime'});
-      const items = resp.result.items || [];
-      const list = Store.events();
-      items.forEach(gi=>{
-        if(list.find(e=>e.googleId===gi.id)) return;
-        const start = gi.start.dateTime || gi.start.date;
-        const d = new Date(start);
-        list.push({
-          id:uid(), googleId:gi.id, title:gi.summary||'(sem título)', desc:gi.description||'',
-          date:dateKey(d), start: gi.start.dateTime? pad2(d.getHours())+':'+pad2(d.getMinutes()) : '',
-          end:'', category:'pessoal', priority:'media', location:gi.location||'', people:'',
-          recurrence:'', status:'scheduled', notes:'Importado do Google Calendar', attachments:'', excluded:[]
-        });
-      });
-      Store.saveEvents(list);
-      toast(items.length+' eventos importados 📥');
-      refreshCurrentView();
-    }catch(e){ toast('Erro ao importar. Verifique a conexão.'); console.error(e); }
+      const resp = await gapi.client.calendar.calendarList.list();
+      this.calendars = resp.result.items || [];
+      renderGcalCalendarMap();
+    }catch(e){ console.error('Falha ao listar calendários', e); }
+  },
+  getMap(){ return Store.settings().gcalCalendarMap || {}; },
+  setCalendarCategory(calendarId, category){
+    const s = Store.settings();
+    s.gcalCalendarMap = s.gcalCalendarMap || {};
+    if(category) s.gcalCalendarMap[calendarId] = category;
+    else delete s.gcalCalendarMap[calendarId];
+    Store.saveSettings(s);
+  },
+  // Sincroniza um calendário específico: adiciona/atualiza o que existe no Google e
+  // remove o que foi apagado de lá — funciona como um espelho de verdade, não só importação.
+  async syncCalendar(calendarId, category){
+    const timeMin = addDays(today(), -14).toISOString();
+    const timeMax = addDays(today(), 180).toISOString();
+    const resp = await gapi.client.calendar.events.list({calendarId, timeMin, timeMax, maxResults:250, singleEvents:true, orderBy:'startTime'});
+    const items = (resp.result.items||[]).filter(gi=>gi.status!=='cancelled');
+    const seenIds = new Set(items.map(gi=>gi.id));
+    let list = Store.events();
+    // remove espelhados desse calendário que sumiram do Google (foram apagados/movidos de lá)
+    list = list.filter(e=> !(e.googleCalendarId===calendarId && !seenIds.has(e.googleId)));
+    let added=0, updated=0;
+    items.forEach(gi=>{
+      const start = gi.start.dateTime || gi.start.date;
+      const end = gi.end && (gi.end.dateTime || gi.end.date);
+      const d = new Date(start);
+      const dEnd = end ? new Date(end) : null;
+      const data = {
+        googleId:gi.id, googleCalendarId:calendarId,
+        title:gi.summary||'(sem título)', desc:gi.description||'',
+        date:dateKey(d),
+        start: gi.start.dateTime ? pad2(d.getHours())+':'+pad2(d.getMinutes()) : '',
+        end: (dEnd && gi.end.dateTime) ? pad2(dEnd.getHours())+':'+pad2(dEnd.getMinutes()) : '',
+        category, priority:'media', location:gi.location||'', people:'',
+        recurrence:'', status:'scheduled', notes:'Espelhado do Google Calendar', attachments:'', excluded:[],
+      };
+      const idx = list.findIndex(e=>e.googleId===gi.id && e.googleCalendarId===calendarId);
+      if(idx>-1){ list[idx] = {...list[idx], ...data}; updated++; }
+      else { list.push({id:uid(), ...data}); added++; }
+    });
+    Store.saveEvents(list);
+    return {added, updated, removed: seenIds.size ? undefined : 0};
+  },
+  async syncAll(silent){
+    if(!window.gapi || !gapi.client.calendar){ if(!silent) toast('Conecte-se primeiro.'); return; }
+    const map = this.getMap();
+    const calendarIds = Object.keys(map);
+    if(!calendarIds.length){ if(!silent) toast('Escolha ao menos um calendário e sua categoria abaixo.'); return; }
+    if(!silent) toast('Sincronizando com o Google Calendar...');
+    let totalAdded=0, totalUpdated=0;
+    for(const calendarId of calendarIds){
+      try{
+        const r = await this.syncCalendar(calendarId, map[calendarId]);
+        totalAdded += r.added; totalUpdated += r.updated;
+      }catch(e){ console.error('Falha ao sincronizar', calendarId, e); }
+    }
+    refreshCurrentView();
+    if(!silent) toast(`Espelho atualizado: ${totalAdded} novo(s), ${totalUpdated} atualizado(s) 🪞`);
   },
   async pushEvent(ev){
     if(!window.gapi || !gapi.client.calendar) return;
@@ -4148,6 +4936,22 @@ const GCal = {
     }catch(e){ console.error('Falha ao enviar para o Google Calendar', e); }
   }
 };
+function renderGcalCalendarMap(){
+  const el = document.getElementById('gcalCalendarMapList');
+  if(!el) return;
+  if(!GCal.calendars.length){ el.innerHTML = `<div class="empty-state">Conecte-se para ver seus calendários.</div>`; return; }
+  const map = GCal.getMap();
+  el.innerHTML = GCal.calendars.map(c=>{
+    const current = map[c.id] || '';
+    return `<div class="list-item" style="align-items:center;">
+      <div class="content"><div class="title" style="font-size:12.5px;">${c.summary}${c.primary?' <span class="badge-soft">principal</span>':''}</div></div>
+      <select style="width:auto; font-size:12px; padding:6px 10px;" onchange="GCal.setCalendarCategory('${c.id}', this.value); renderGcalCalendarMap();">
+        <option value="">Não sincronizar</option>
+        ${Object.entries(CATEGORIES).map(([k,cat])=>`<option value="${k}" ${current===k?'selected':''}>${cat.icon} ${cat.label}</option>`).join('')}
+      </select>
+    </div>`;
+  }).join('');
+}
 function syncPushIfConnected(ev){
   const s = Store.settings();
   if(s.gcalConnected) GCal.pushEvent(ev);
@@ -4158,7 +4962,8 @@ document.getElementById('gcalConnectBtn').addEventListener('click', ()=>{
   if(!cid || !key){ toast('Preencha Client ID e API Key'); return; }
   GCal.connect(cid, key);
 });
-document.getElementById('gcalImportBtn').addEventListener('click', ()=> GCal.importEvents());
+document.getElementById('gcalSyncNowBtn').addEventListener('click', ()=> GCal.syncAll());
+
 
 /* ---------------------------------------------------------
    21. DATA EXPORT / IMPORT / RESET
@@ -4228,6 +5033,19 @@ const savedSettings = Store.settings();
 applyTheme(savedSettings.theme || 'light');
 calState.date = new Date(2026,7,1);
 switchView('home');
+loadSprintCache().then(()=>{
+  if(currentView==='calendar' || currentView==='home') refreshCurrentView();
+});
+if(CloudSync.isConfigured()){
+  CloudSync.pullAllAndApply().then(ok=>{
+    if(ok){
+      const t = Store.settings();
+      applyTheme(t.theme || 'light');
+      switchView(currentView);
+      toast('Dados sincronizados da nuvem ☁️');
+    }
+  });
+}
 </script>
 </body>
 </html>
