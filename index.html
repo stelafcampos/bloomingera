@@ -4129,18 +4129,43 @@ const SprintDB = {
   },
 };
 let _sprint2SyncTimer = null;
+let _sprint2SyncPending = false;
 function scheduleSprint2CloudSync(){
   if(typeof CloudSync==='undefined' || !CloudSync.isConfigured()) return;
+  _sprint2SyncPending = true;
   clearTimeout(_sprint2SyncTimer);
-  _sprint2SyncTimer = setTimeout(()=>{
-    CloudSync.push('sprint2_sprints', SPRINT2.sprints);
-    const tasksJson = JSON.stringify(SPRINT2.tasks);
-    if(tasksJson.length > 45000){
-      console.warn('Sprints 2.0: payload de tasks grande demais para uma célula do Sheets ('+tasksJson.length+' caracteres) — provavelmente por causa de anexos. A sincronização da nuvem para Sprints pode falhar até os anexos serem removidos ou reduzidos.');
-    }
-    CloudSync.push('sprint2_tasks', SPRINT2.tasks);
-  }, 1200);
+  _sprint2SyncTimer = setTimeout(flushSprint2CloudSync, 600);
 }
+function flushSprint2CloudSync(){
+  if(!_sprint2SyncPending) return;
+  clearTimeout(_sprint2SyncTimer);
+  _sprint2SyncPending = false;
+  if(typeof CloudSync==='undefined' || !CloudSync.isConfigured()) return;
+  CloudSync.push('sprint2_sprints', SPRINT2.sprints);
+  const tasksJson = JSON.stringify(SPRINT2.tasks);
+  if(tasksJson.length > 45000){
+    console.warn('Sprints 2.0: payload de tasks grande demais para uma célula do Sheets ('+tasksJson.length+' caracteres) — provavelmente por causa de anexos. A sincronização da nuvem para Sprints pode falhar até os anexos serem removidos ou reduzidos.');
+  }
+  CloudSync.push('sprint2_tasks', SPRINT2.tasks);
+}
+// Garante que uma mudança pendente é enviada na hora se a pessoa trocar de aba,
+// minimizar ou fechar a página antes do pequeno atraso (debounce) terminar sozinho.
+// No fechamento/saída da página usa sendBeacon (mais confiável que fetch nesse momento,
+// já que o navegador pode cancelar um fetch normal no meio quando a aba está fechando).
+function sendBeaconFlushSprint2(){
+  if(!_sprint2SyncPending) return;
+  const c = CloudSync.getConfig();
+  if(!c.url || !c.secret || typeof navigator==='undefined' || !navigator.sendBeacon) { flushSprint2CloudSync(); return; }
+  _sprint2SyncPending = false;
+  clearTimeout(_sprint2SyncTimer);
+  try{
+    navigator.sendBeacon(c.url, new Blob([JSON.stringify({secret:c.secret, key:'sprint2_sprints', value: JSON.stringify(SPRINT2.sprints)})], {type:'text/plain;charset=utf-8'}));
+    navigator.sendBeacon(c.url, new Blob([JSON.stringify({secret:c.secret, key:'sprint2_tasks', value: JSON.stringify(SPRINT2.tasks)})], {type:'text/plain;charset=utf-8'}));
+  }catch(e){ /* melhor esforço */ }
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) sendBeaconFlushSprint2(); });
+window.addEventListener('pagehide', sendBeaconFlushSprint2);
+window.addEventListener('beforeunload', sendBeaconFlushSprint2);
 // Aplica os Sprints 2.0 vindos da nuvem (chegam via localStorage depois do pullAllAndApply
 // geral, mas essa parte específica precisa ser gravada também no IndexedDB).
 async function applySprint2FromCloud(){
