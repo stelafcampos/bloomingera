@@ -1010,6 +1010,7 @@ const CloudSync = {
     if(!c.url || !c.secret) return {data:null, error:'Conexão não configurada'};
     // Usa POST (mesmo método já confirmado funcionando no push/teste) para evitar
     // bloqueios de rede/navegador específicos de requisições GET com parâmetros na URL.
+    let postError = null;
     try{
       const res = await fetch(c.url, {
         method:'POST',
@@ -1023,6 +1024,7 @@ const CloudSync = {
       if(json.error) return {data:null, error:json.error};
       return {data:json.data||{}, error:null};
     }catch(e){
+      postError = e.message || 'erro desconhecido no POST';
       // fallback: tenta o método antigo (GET), caso o Apps Script ainda esteja na versão anterior
       try{
         const res2 = await fetch(`${c.url}?action=getAll&secret=${encodeURIComponent(c.secret)}`);
@@ -1030,7 +1032,10 @@ const CloudSync = {
         const json2 = JSON.parse(text2);
         if(json2.error) return {data:null, error:json2.error};
         return {data:json2.data||{}, error:null};
-      }catch(e2){ return {data:null, error:e.message||'Falha de rede (offline, bloqueio do navegador/rede, ou URL incorreta)'}; }
+      }catch(e2){
+        const getError = e2.message || 'erro desconhecido no GET';
+        return {data:null, error:`POST falhou (${postError}) e GET também falhou (${getError}) — a conexão está sendo bloqueada antes de chegar ao servidor. Verifique bloqueador de anúncios/extensões, VPN, ou rede corporativa/escolar bloqueando script.google.com neste aparelho.`};
+      }
     }
   },
   async pushAll(){
@@ -4104,23 +4109,71 @@ const SprintDB = {
   },
   async put(store, obj){
     const db = await this.open();
-    return new Promise((resolve,reject)=>{
+    await new Promise((resolve,reject)=>{
       const tx = db.transaction(store,'readwrite');
       tx.objectStore(store).put(obj);
       tx.oncomplete = ()=> resolve();
       tx.onerror = ()=> reject(tx.error);
     });
+    scheduleSprint2CloudSync();
   },
   async remove(store, id){
     const db = await this.open();
-    return new Promise((resolve,reject)=>{
+    await new Promise((resolve,reject)=>{
       const tx = db.transaction(store,'readwrite');
       tx.objectStore(store).delete(id);
       tx.oncomplete = ()=> resolve();
       tx.onerror = ()=> reject(tx.error);
     });
+    scheduleSprint2CloudSync();
   },
 };
+let _sprint2SyncTimer = null;
+function scheduleSprint2CloudSync(){
+  if(typeof CloudSync==='undefined' || !CloudSync.isConfigured()) return;
+  clearTimeout(_sprint2SyncTimer);
+  _sprint2SyncTimer = setTimeout(()=>{
+    CloudSync.push('sprint2_sprints', SPRINT2.sprints);
+    const tasksJson = JSON.stringify(SPRINT2.tasks);
+    if(tasksJson.length > 45000){
+      console.warn('Sprints 2.0: payload de tasks grande demais para uma célula do Sheets ('+tasksJson.length+' caracteres) — provavelmente por causa de anexos. A sincronização da nuvem para Sprints pode falhar até os anexos serem removidos ou reduzidos.');
+    }
+    CloudSync.push('sprint2_tasks', SPRINT2.tasks);
+  }, 1200);
+}
+// Aplica os Sprints 2.0 vindos da nuvem (chegam via localStorage depois do pullAllAndApply
+// geral, mas essa parte específica precisa ser gravada também no IndexedDB).
+async function applySprint2FromCloud(){
+  const rawSprints = localStorage.getItem('be_sprint2_sprints');
+  const rawTasks = localStorage.getItem('be_sprint2_tasks');
+  if(!rawSprints && !rawTasks) return false;
+  try{
+    if(rawSprints){
+      const sprints = JSON.parse(rawSprints);
+      const db = await SprintDB.open();
+      await new Promise((resolve,reject)=>{
+        const tx = db.transaction('sprints','readwrite');
+        tx.objectStore('sprints').clear();
+        sprints.forEach(s=> tx.objectStore('sprints').put(s));
+        tx.oncomplete = resolve; tx.onerror = ()=>reject(tx.error);
+      });
+      SPRINT2.sprints = sprints;
+    }
+    if(rawTasks){
+      const tasks = JSON.parse(rawTasks);
+      const db = await SprintDB.open();
+      await new Promise((resolve,reject)=>{
+        const tx = db.transaction('tasks','readwrite');
+        tx.objectStore('tasks').clear();
+        tasks.forEach(t=> tx.objectStore('tasks').put(t));
+        tx.oncomplete = resolve; tx.onerror = ()=>reject(tx.error);
+      });
+      SPRINT2.tasks = tasks;
+    }
+    SPRINT2.loaded = true;
+    return true;
+  }catch(e){ console.warn('Falha ao aplicar Sprints 2.0 vindos da nuvem', e); return false; }
+}
 
 const SPRINT2 = { sprints:[], tasks:[], loaded:false, selectedSprintId:'', filters:{categoria:'',status:'',prioridade:'',habilitador:'',responsavel:''} };
 function todayISO(){ return dateKey(today()); }
@@ -4163,16 +4216,21 @@ function fieldChangeLog(task, label, oldVal, newVal){
 }
 
 /* ---- Carregamento + migração automática dos dados antigos ---- */
-async function loadSprintCache(){
-  try{
-    SPRINT2.sprints = await SprintDB.getAll('sprints');
-    SPRINT2.tasks = await SprintDB.getAll('tasks');
-    SPRINT2.loaded = true;
-    await migrateOldSprintDataIfNeeded();
-  }catch(e){
-    console.warn('Sprints 2.0: IndexedDB indisponível, seguindo sem esse recurso.', e);
-    SPRINT2.sprints = []; SPRINT2.tasks = []; SPRINT2.loaded = false; SPRINT2.unavailable = true;
-  }
+let _sprintCacheLoadPromise = null;
+function loadSprintCache(){
+  if(_sprintCacheLoadPromise) return _sprintCacheLoadPromise;
+  _sprintCacheLoadPromise = (async ()=>{
+    try{
+      SPRINT2.sprints = await SprintDB.getAll('sprints');
+      SPRINT2.tasks = await SprintDB.getAll('tasks');
+      SPRINT2.loaded = true;
+      await migrateOldSprintDataIfNeeded();
+    }catch(e){
+      console.warn('Sprints 2.0: IndexedDB indisponível, seguindo sem esse recurso.', e);
+      SPRINT2.sprints = []; SPRINT2.tasks = []; SPRINT2.loaded = false; SPRINT2.unavailable = true;
+    }
+  })();
+  return _sprintCacheLoadPromise;
 }
 async function migrateOldSprintDataIfNeeded(){
   if(DB.get('sprintV2Migrated', false)) return;
@@ -4765,15 +4823,23 @@ document.getElementById('cloudSyncPushBtn').addEventListener('click', async ()=>
   if(!CloudSync.isConfigured()){ toast('Salve a conexão primeiro'); return; }
   toast('Enviando dados para a nuvem...');
   const r = await CloudSync.pushAll();
-  if(r.error && r.sent===0) toast('❌ Nada foi enviado: '+r.error);
-  else if(r.failed) toast(`⚠️ ${r.sent} enviado(s), ${r.failed} falharam: ${r.error}`);
-  else toast(`✅ ${r.sent} chave(s) enviada(s) para a planilha ☁️`);
+  const r2 = await CloudSync.pushOne('sprint2_sprints', SPRINT2.sprints);
+  const r3 = await CloudSync.pushOne('sprint2_tasks', SPRINT2.tasks);
+  const sprintsFailed = (!r2.ok?1:0) + (!r3.ok?1:0);
+  const totalFailed = r.failed + sprintsFailed;
+  if(r.error && r.sent===0 && sprintsFailed===2) toast('❌ Nada foi enviado: '+r.error);
+  else if(totalFailed) toast(`⚠️ Enviado com ${totalFailed} falha(s) — confira Sprints também.`);
+  else toast(`✅ Tudo enviado para a planilha, incluindo Sprints ☁️`);
 });
 document.getElementById('cloudSyncPullBtn').addEventListener('click', async ()=>{
   if(!CloudSync.isConfigured()){ toast('Salve a conexão primeiro'); return; }
   toast('Buscando dados da nuvem...');
   const r = await CloudSync.pullAllAndApply();
-  if(r.ok){ toast('Dados atualizados a partir da nuvem ☁️'); refreshCurrentView(); switchView(currentView); }
+  if(r.ok){
+    await applySprint2FromCloud();
+    toast('Dados atualizados a partir da nuvem, incluindo Sprints ☁️');
+    refreshCurrentView(); switchView(currentView);
+  }
   else toast('❌ Não foi possível buscar da nuvem: '+r.error);
 });
 
@@ -5156,21 +5222,25 @@ const savedSettings = Store.settings();
 applyTheme(savedSettings.theme || 'light');
 calState.date = new Date(2026,7,1);
 switchView('home');
-loadSprintCache().then(()=>{
-  if(currentView==='calendar' || currentView==='home') refreshCurrentView();
-});
-if(CloudSync.isConfigured()){
-  CloudSync.pullAllAndApply().then(r=>{
+(async function initCloudAndSprints(){
+  await loadSprintCache();
+  if(CloudSync.isConfigured()){
+    const r = await CloudSync.pullAllAndApply();
     if(r.ok){
+      const applied2 = await applySprint2FromCloud();
       const t = Store.settings();
       applyTheme(t.theme || 'light');
       switchView(currentView);
       toast('Dados sincronizados da nuvem ☁️');
     } else {
       console.warn('CloudSync auto-pull falhou:', r.error);
+      if(currentView==='calendar' || currentView==='home') refreshCurrentView();
     }
-  });
-}
+  } else {
+    if(currentView==='calendar' || currentView==='home') refreshCurrentView();
+  }
+})();
+
 </script>
 </body>
 </html>
