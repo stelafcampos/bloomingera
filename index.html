@@ -2334,14 +2334,7 @@ const Store = {
 
 function seedDefaults(){
   if(DB.get('seeded', false)) return;
-  const evs = [];
-  const baseDate = '2026-08-03'; // referência da primeira ocorrência (segunda-feira)
-  evs.push({id:uid(), title:'Academia', desc:'Treino de força', date:baseDate, start:'07:00', end:'08:30', category:'saude', subcategory:'atividade_fisica', priority:'media', location:'', people:'', recurrence:'weekdays', status:'scheduled', notes:'', attachments:'', excluded:[]});
-  evs.push({id:uid(), title:'Almoço', desc:'', date:baseDate, start:'12:00', end:'14:00', category:'autocuidado', priority:'baixa', location:'', people:'', recurrence:'weekdays', status:'scheduled', notes:'Horário flexível — mover quando necessário', attachments:'', excluded:[]});
-  evs.push({id:uid(), title:'Terapia', desc:'', date:'2026-08-03', start:'18:00', end:'19:00', category:'autocuidado', priority:'alta', location:'', people:'', recurrence:'weekly', status:'scheduled', notes:'', attachments:'', excluded:[]});
-  evs.push({id:uid(), title:'RPG', desc:'', date:'2026-08-04', start:'19:00', end:'22:00', category:'diversao', priority:'media', location:'', people:'', recurrence:'weekly', status:'scheduled', notes:'', attachments:'', excluded:[]});
-  Store.saveEvents(evs);
-
+  // Sem eventos padrão — todos os compromissos vêm do Google Calendar ou são criados por você
   const habits = [
     {id:uid(), name:'Academia', icon:'💪', days:[1,2,3,4,5], time:'07:00', type:'acquire'},
     {id:uid(), name:'Água', icon:'💧', days:[0,1,2,3,4,5,6], time:'', type:'acquire'},
@@ -2354,6 +2347,25 @@ function seedDefaults(){
   ];
   Store.saveHabits(habits);
   DB.set('seeded', true);
+}
+
+// Remove os eventos de exemplo que foram criados pelo seed antigo (Academia, Almoço, Terapia, RPG)
+// em qualquer navegador onde ainda existam no localStorage.
+// Roda apenas uma vez e não toca em eventos criados por você ou vindos do Google Calendar.
+function cleanSeedEvents(){
+  if(DB.get('seedEventsCleaned', false)) return;
+  const SEED_TITLES = ['Academia','Almoço','Terapia','RPG'];
+  const list = Store.events();
+  const cleaned = list.filter(e=> {
+    // preserva: veio do Google Calendar, ou o título não é um dos exemplos de seed
+    if(e.googleId || e.googleCalendarId || e.outlookUid) return true;
+    return !SEED_TITLES.includes(e.title);
+  });
+  if(cleaned.length !== list.length){
+    Store.saveEvents(cleaned);
+    console.log('Seed events cleaned:', list.length - cleaned.length, 'removed');
+  }
+  DB.set('seedEventsCleaned', true);
 }
 
 // Importa as tarefas reais do planejamento de Q3 2026 (Clube e Novos Negócios) onde Stela é responsável
@@ -5383,11 +5395,13 @@ function migrateCategoriesV3(){
 }
 
 /* ---------------------------------------------------------
-   23. INIT
+   23. INIT — ordem importa:
+   1. Aplica tema salvo localmente (para a tela não piscar)
+   2. Mostra o app com o que já está no localStorage local
+   3. Puxa a nuvem (sobrescreve o local com a versão mais recente)
+   4. Só então roda seedDefaults (não sobrescreve nada que veio da nuvem)
+   5. Migrações e importações de sprint também rodam depois do pull
 --------------------------------------------------------- */
-seedDefaults();
-migrateCategoriesV3();
-importQ3SprintTasks();
 const savedSettings = Store.settings();
 applyTheme(savedSettings.theme || 'light');
 calState.date = new Date(2026,7,1);
@@ -5397,18 +5411,20 @@ switchView('home');
   if(CloudSync.isConfigured()){
     const r = await CloudSync.pullAllAndApply();
     if(r.ok){
-      const applied2 = await applySprint2FromCloud();
+      await applySprint2FromCloud();
       const t = Store.settings();
       applyTheme(t.theme || 'light');
-      switchView(currentView);
-      toast('Dados sincronizados da nuvem ☁️');
     } else {
       console.warn('CloudSync auto-pull falhou:', r.error);
-      if(currentView==='calendar' || currentView==='home') refreshCurrentView();
     }
-  } else {
-    if(currentView==='calendar' || currentView==='home') refreshCurrentView();
   }
+  // seed e migrações rodam DEPOIS do pull para não sobrescrever dados reais da nuvem
+  seedDefaults();
+  cleanSeedEvents();
+  migrateCategoriesV3();
+  importQ3SprintTasks();
+  switchView(currentView);
+  if(CloudSync.isConfigured()) toast('Dados sincronizados da nuvem ☁️');
 })();
 
 </script>
