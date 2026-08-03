@@ -406,6 +406,8 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
 .attachment-row .att-icon{font-size:16px;}
 .attachment-row .att-name{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .subtask-card{background:var(--surface-2); border-radius:12px; padding:10px 12px; margin-bottom:8px;}
+.challenge-dot{width:22px; height:22px; border-radius:50%; cursor:pointer; transition:transform .12s ease; flex-shrink:0;}
+.challenge-dot:hover{transform:scale(1.25);}
 </style>
 </head>
 <body>
@@ -547,15 +549,35 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
 
     <!-- ===================== HABITS ===================== -->
     <section class="view" id="view-habits">
-      <div class="grid grid-2">
-        <div class="card card-pad">
-          <div class="section-title"><h3>Meus hábitos</h3><button class="btn btn-soft btn-sm" id="newHabitBtn">+ novo hábito</button></div>
-          <div id="habitsList"></div>
+      <!-- Tabs: Hábitos / Desafios -->
+      <div class="filters-bar" style="margin-bottom:18px; border-bottom:1px solid var(--border-soft); padding-bottom:14px;">
+        <button class="pill-choice active" id="habitsTabHabits" onclick="switchHabitsTab('habits')">🌱 Hábitos</button>
+        <button class="pill-choice" id="habitsTabChallenge" onclick="switchHabitsTab('challenge')">🏆 Desafios</button>
+      </div>
+
+      <!-- HÁBITOS TAB -->
+      <div id="habitsTabContent">
+        <div class="grid grid-2">
+          <div>
+            <div class="card card-pad" style="margin-bottom:16px;">
+              <div class="section-title"><h3>✅ Quero adquirir</h3><button class="btn btn-soft btn-sm" id="newHabitBtn">+ novo</button></div>
+              <div id="habitsListAcquire"></div>
+            </div>
+            <div class="card card-pad">
+              <div class="section-title"><h3>🚫 Quero perder</h3><button class="btn btn-soft btn-sm" id="newHabitQuitBtn">+ novo</button></div>
+              <div id="habitsListQuit"></div>
+            </div>
+          </div>
+          <div class="card card-pad">
+            <div class="section-title"><h3>Consistência (30 dias)</h3></div>
+            <div id="habitsChart"></div>
+          </div>
         </div>
-        <div class="card card-pad">
-          <div class="section-title"><h3>Consistência (30 dias)</h3></div>
-          <div id="habitsChart"></div>
-        </div>
+      </div>
+
+      <!-- DESAFIOS TAB -->
+      <div id="challengeTabContent" class="hidden">
+        <div id="challengeBoard"></div>
       </div>
     </section>
 
@@ -846,8 +868,15 @@ code.inline{background:var(--surface-2); padding:1px 6px; border-radius:5px; fon
   <div class="modal-box">
     <div class="panel-head"><h3 id="habitModalTitle">Novo hábito</h3><button class="panel-close" onclick="closeHabitModal()">✕</button></div>
     <input type="hidden" id="habitId">
+    <input type="hidden" id="habitType" value="acquire">
     <div class="field"><label class="field-label">Nome</label><input type="text" id="habitName" placeholder="Ex: Beber água, Leitura…"></div>
     <div class="field"><label class="field-label">Ícone (emoji)</label><input type="text" id="habitIcon" placeholder="💧" maxlength="2"></div>
+    <div class="field"><label class="field-label">Tipo</label>
+      <div class="priority-select" id="habitTypeSelect">
+        <button type="button" class="pill-choice active" data-htype="acquire" style="color:#5B8A6B" onclick="pickHabitType(this,'acquire')">✅ Quero adquirir</button>
+        <button type="button" class="pill-choice" data-htype="quit" style="color:#B25A63" onclick="pickHabitType(this,'quit')">🚫 Quero perder</button>
+      </div>
+    </div>
     <div class="field"><label class="field-label">Dias da semana</label>
       <div class="priority-select" id="habitDaysSelect"></div>
     </div>
@@ -2314,14 +2343,14 @@ function seedDefaults(){
   Store.saveEvents(evs);
 
   const habits = [
-    {id:uid(), name:'Academia', icon:'💪', days:[1,2,3,4,5], time:'07:00'},
-    {id:uid(), name:'Água', icon:'💧', days:[0,1,2,3,4,5,6], time:''},
-    {id:uid(), name:'Leitura', icon:'📖', days:[1,3,5], time:''},
-    {id:uid(), name:'Estudo de Astrologia', icon:'✨', days:[2,4], time:''},
-    {id:uid(), name:'Estudo de Umbanda', icon:'🕯️', days:[0,3], time:''},
-    {id:uid(), name:'Organizar casa', icon:'🏠', days:[6], time:''},
-    {id:uid(), name:'Alimentação consciente', icon:'🥗', days:[0,1,2,3,4,5,6], time:''},
-    {id:uid(), name:'Dormir cedo', icon:'🌙', days:[0,1,2,3,4,5,6], time:'23:00'},
+    {id:uid(), name:'Academia', icon:'💪', days:[1,2,3,4,5], time:'07:00', type:'acquire'},
+    {id:uid(), name:'Água', icon:'💧', days:[0,1,2,3,4,5,6], time:'', type:'acquire'},
+    {id:uid(), name:'Leitura', icon:'📖', days:[1,3,5], time:'', type:'acquire'},
+    {id:uid(), name:'Estudo de Astrologia', icon:'✨', days:[2,4], time:'', type:'acquire'},
+    {id:uid(), name:'Estudo de Umbanda', icon:'🕯️', days:[0,3], time:'', type:'acquire'},
+    {id:uid(), name:'Organizar casa', icon:'🏠', days:[6], time:'', type:'acquire'},
+    {id:uid(), name:'Alimentação consciente', icon:'🥗', days:[0,1,2,3,4,5,6], time:'', type:'acquire'},
+    {id:uid(), name:'Dormir cedo', icon:'🌙', days:[0,1,2,3,4,5,6], time:'23:00', type:'acquire'},
   ];
   Store.saveHabits(habits);
   DB.set('seeded', true);
@@ -3609,19 +3638,39 @@ function deleteTaskFromModal(){
 }
 
 /* ============================================================
-   15. HABITS VIEW
+   15. HABITS VIEW — adquirir / perder / desafios
 ============================================================ */
-function renderHabits(){
-  const habits = Store.habits();
-  document.getElementById('habitsList').innerHTML = habits.length ? habits.map(h=>`
+let _habitsTab = 'habits';
+function switchHabitsTab(tab){
+  _habitsTab = tab;
+  document.getElementById('habitsTabHabits').classList.toggle('active', tab==='habits');
+  document.getElementById('habitsTabChallenge').classList.toggle('active', tab==='challenge');
+  document.getElementById('habitsTabContent').classList.toggle('hidden', tab!=='habits');
+  document.getElementById('challengeTabContent').classList.toggle('hidden', tab!=='challenge');
+  if(tab==='challenge') renderChallenges();
+}
+function pickHabitType(btn, type){
+  document.querySelectorAll('#habitTypeSelect .pill-choice').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('habitType').value = type;
+}
+function habitListHtml(habits){
+  if(!habits.length) return `<div class="empty-state" style="padding:12px;"><span>🌱</span>Nenhum hábito aqui ainda.</div>`;
+  return habits.map(h=>`
     <div class="list-item" style="cursor:pointer" onclick="openHabitModal('${h.id}')">
       <div class="avatar-init">${h.icon}</div>
-      <div class="content"><div class="title">${h.name}</div><div class="meta">${h.days.map(d=>WEEKDAY_NAMES[d]).join(', ')} ${h.time?'· '+h.time:''}</div></div>
+      <div class="content"><div class="title">${h.name}</div><div class="meta">${h.days.map(d=>MONDAY_WEEKDAY_NAMES[(d+6)%7]).join(', ')} ${h.time?'· '+h.time:''}</div></div>
       <div style="text-align:right;"><div class="badge-soft">🔥 ${habitStreak(h.id)} dias</div></div>
     </div>
-  `).join('') : `<div class="empty-state"><span>🌱</span>Crie seu primeiro hábito.</div>`;
-
-  // 30-day consistency chart per habit
+  `).join('');
+}
+function renderHabits(){
+  const habits = Store.habits();
+  const acquire = habits.filter(h=>h.type!=='quit');
+  const quit    = habits.filter(h=>h.type==='quit');
+  document.getElementById('habitsListAcquire').innerHTML = habitListHtml(acquire);
+  document.getElementById('habitsListQuit').innerHTML    = habitListHtml(quit);
+  // 30-day consistency chart
   let chart = '';
   habits.forEach(h=>{
     const logs = Store.habitLogs();
@@ -3631,27 +3680,38 @@ function renderHabits(){
       if(h.days.includes(d.getDay())){ total++; if(logs[h.id+'_'+dateKey(d)]) done++; }
     }
     const pct = total? Math.round(done/total*100):0;
-    chart += `<div class="bar-chart-row"><div class="lbl">${h.icon} ${h.name}</div><div class="track"><div class="fill" style="width:${pct}%; background:${CATEGORIES.astrologia.color}"></div></div><div class="val">${pct}%</div></div>`;
+    const color = h.type==='quit' ? '#B25A63' : CATEGORIES.astrologia.color;
+    chart += `<div class="bar-chart-row"><div class="lbl">${h.icon} ${h.name}</div><div class="track"><div class="fill" style="width:${pct}%; background:${color}"></div></div><div class="val">${pct}%</div></div>`;
   });
   document.getElementById('habitsChart').innerHTML = chart || `<div class="empty-state">Sem dados ainda.</div>`;
+  if(_habitsTab==='challenge') renderChallenges();
 }
-document.getElementById('newHabitBtn').addEventListener('click', ()=> openHabitModal());
-function openHabitModal(id){
+document.getElementById('newHabitBtn').addEventListener('click', ()=> openHabitModal(null,'acquire'));
+document.getElementById('newHabitQuitBtn').addEventListener('click', ()=> openHabitModal(null,'quit'));
+function openHabitModal(id, defaultType){
   document.getElementById('habitModalTitle').textContent = id?'Editar hábito':'Novo hábito';
   document.getElementById('habitDeleteBtn').classList.toggle('hidden', !id);
   const daysEl = document.getElementById('habitDaysSelect');
-  const selectedDays = id ? Store.habits().find(h=>h.id===id).days : [0,1,2,3,4,5,6];
-  daysEl.innerHTML = WEEKDAY_NAMES.map((n,i)=> `<button type="button" class="pill-choice ${selectedDays.includes(i)?'active':''}" data-day="${i}" onclick="this.classList.toggle('active')">${n}</button>`).join('');
-  if(id){
-    const h = Store.habits().find(x=>x.id===id);
-    document.getElementById('habitId').value = h.id;
-    document.getElementById('habitName').value = h.name;
-    document.getElementById('habitIcon').value = h.icon;
-    document.getElementById('habitTime').value = h.time||'';
+  const h = id ? Store.habits().find(h=>h.id===id) : null;
+  const selectedDays = h ? h.days : [0,1,2,3,4,5,6];
+  daysEl.innerHTML = MONDAY_WEEKDAY_NAMES.map((n,i)=>{
+    const dayNum = (i+1)%7;
+    return `<button type="button" class="pill-choice ${selectedDays.includes(dayNum)?'active':''}" data-day="${dayNum}" onclick="this.classList.toggle('active')">${n}</button>`;
+  }).join('');
+  const type = h ? (h.type||'acquire') : (defaultType||'acquire');
+  document.getElementById('habitType').value = type;
+  document.querySelectorAll('#habitTypeSelect .pill-choice').forEach(b=>{
+    b.classList.toggle('active', b.dataset.htype===type);
+  });
+  if(h){
+    document.getElementById('habitId').value=h.id;
+    document.getElementById('habitName').value=h.name;
+    document.getElementById('habitIcon').value=h.icon;
+    document.getElementById('habitTime').value=h.time||'';
   }else{
     document.getElementById('habitId').value='';
     document.getElementById('habitName').value='';
-    document.getElementById('habitIcon').value='🌱';
+    document.getElementById('habitIcon').value= type==='quit'?'🚫':'🌱';
     document.getElementById('habitTime').value='';
   }
   document.getElementById('habitModalOverlay').classList.add('open');
@@ -3663,9 +3723,14 @@ function saveHabitFromModal(){
   const days = [...document.querySelectorAll('#habitDaysSelect .pill-choice.active')].map(b=>Number(b.dataset.day));
   const id = document.getElementById('habitId').value;
   const list = Store.habits();
-  const data = { name, icon:document.getElementById('habitIcon').value||'🌱', days: days.length?days:[0,1,2,3,4,5,6], time:document.getElementById('habitTime').value };
-  if(id){ const idx = list.findIndex(h=>h.id===id); list[idx]={...list[idx],...data}; }
-  else list.push({id:uid(), ...data});
+  const data = {
+    name, icon:document.getElementById('habitIcon').value||'🌱',
+    days: days.length?days:[0,1,2,3,4,5,6],
+    time:document.getElementById('habitTime').value,
+    type:document.getElementById('habitType').value||'acquire',
+  };
+  if(id){ const idx=list.findIndex(h=>h.id===id); list[idx]={...list[idx],...data}; }
+  else list.push({id:uid(),...data});
   Store.saveHabits(list);
   closeHabitModal(); toast('Hábito salvo 🌿'); renderHabits();
   if(currentView==='home') renderHome();
@@ -3675,6 +3740,86 @@ function deleteHabitFromModal(){
   Store.saveHabits(Store.habits().filter(h=>h.id!==id));
   closeHabitModal(); toast('Hábito removido'); renderHabits();
 }
+
+/* ============================================================
+   15b. DESAFIOS (Challenges)
+============================================================ */
+const CHALLENGES_DEFAULT = [
+  {
+    id:'sugar45',
+    title:'🍬 45 Dias Sem Açúcar',
+    startDate:'2026-08-04',
+    totalDays:45,
+    color:'#C9A34E',
+    description:'Zero açúcar refinado, bebidas açucaradas e doces processados.',
+  }
+];
+function getChallenges(){ return DB.get('challenges', CHALLENGES_DEFAULT); }
+function saveChallenges(list){ DB.set('challenges', list); }
+function getChallengeLog(){ return DB.get('challengeLog', {}); }
+function saveChallengeLog(obj){ DB.set('challengeLog', obj); }
+
+function renderChallenges(){
+  const el = document.getElementById('challengeBoard');
+  if(!el) return;
+  const challenges = getChallenges();
+  const log = getChallengeLog();
+  el.innerHTML = challenges.map(ch=>{
+    const start = parseKey(ch.startDate);
+    const todayD = today();
+    const elapsed = Math.max(0, Math.floor((todayD - start)/(1000*60*60*24)));
+    const daysLeft = Math.max(0, ch.totalDays - elapsed);
+    const checked = Object.keys(log).filter(k=>k.startsWith(ch.id+'_')).length;
+    // dot grid — 45 days, in rows of 9
+    const dots = [...Array(ch.totalDays)].map((_,i)=>{
+      const dayDate = addDays(start, i);
+      const key = ch.id+'_'+dateKey(dayDate);
+      const done = !!log[key];
+      const isPast = dayDate <= todayD;
+      const isToday = isSameDay(dayDate, todayD);
+      const dayLabel = 'Dia '+(i+1)+' — '+fmtLong(dayDate);
+      const dotStyle = done
+        ? `background:${ch.color}; border:2px solid ${ch.color};`
+        : isPast
+          ? `background:transparent; border:2px solid var(--danger); opacity:.6;`
+          : `background:transparent; border:2px solid var(--border-soft);`;
+      const pulse = isToday ? 'outline:2px solid '+ch.color+'; outline-offset:2px;' : '';
+      return `<button type="button" class="challenge-dot" style="${dotStyle}${pulse}" title="${dayLabel}${done?' ✅':''}" onclick="toggleChallengeDay('${ch.id}','${dateKey(dayDate)}')"></button>`;
+    }).join('');
+    const note = log[ch.id+'_note_'+dateKey(todayD)] || '';
+    return `<div class="card card-pad" style="margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+        <div><h3 style="font-size:18px; margin-bottom:4px;">${ch.title}</h3>
+          <div style="font-size:12px; color:var(--text-soft);">${ch.description}</div></div>
+        <div style="text-align:right; flex-shrink:0;">
+          <div class="badge-soft" style="font-size:13px; font-weight:700; color:${ch.color};">${checked}/${ch.totalDays} dias</div>
+          <div style="font-size:11px; color:var(--text-faint); margin-top:4px;">${daysLeft>0?daysLeft+' dias restantes':'🎉 Concluído!'}</div>
+        </div>
+      </div>
+      <div class="progress-bar" style="margin-bottom:18px;"><div class="progress-fill" style="width:${Math.round(checked/ch.totalDays*100)}%; background:${ch.color};"></div></div>
+      <div class="challenge-dots-grid" style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:18px;">${dots}</div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-label" style="font-size:11px;">💬 Como me senti hoje — ${fmtLong(todayD)}</label>
+        <textarea rows="2" style="font-size:12.5px;" placeholder="Anote aqui…" onchange="saveChallengeNote('${ch.id}','${dateKey(todayD)}',this.value)">${escHtml(note)}</textarea>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleChallengeDay(challengeId, dateStr){
+  const log = getChallengeLog();
+  const key = challengeId+'_'+dateStr;
+  if(log[key]) delete log[key]; else log[key] = true;
+  saveChallengeLog(log);
+  renderChallenges();
+}
+function saveChallengeNote(challengeId, dateStr, text){
+  const log = getChallengeLog();
+  log[challengeId+'_note_'+dateStr] = text;
+  saveChallengeLog(log);
+}
+// Add challengeLog to cloud sync keys
+if(!CLOUD_SYNC_KEYS.includes('challenges')) CLOUD_SYNC_KEYS.push('challenges');
+if(!CLOUD_SYNC_KEYS.includes('challengeLog')) CLOUD_SYNC_KEYS.push('challengeLog');
 
 /* ============================================================
    16. JOURNAL VIEW
