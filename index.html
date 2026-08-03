@@ -1027,12 +1027,32 @@ const CloudSync = {
   push(key, value){
     const c = this.getConfig();
     if(!c.url || !c.secret) return;
+    // Marca esta chave como pendente para o caso de o navegador fechar antes do fetch completar
+    this._pending = this._pending || new Set();
+    this._pending.add(key);
     this.pushOne(key, value).then(r=>{
-      if(!r.ok){
+      if(r.ok){ if(this._pending) this._pending.delete(key); }
+      else{
         console.warn('CloudSync push falhou:', r.error);
         if(!this._warned){ this._warned = true; toast('⚠️ Falha ao sincronizar com a nuvem — veja Configurações'); }
       }
     });
+  },
+  // Envia via sendBeacon todas as chaves que ainda não tiveram confirmação de recebimento.
+  // sendBeacon é garantido pelo navegador mesmo durante page unload/visibilitychange.
+  flushPending(){
+    const c = this.getConfig();
+    if(!c.url || !c.secret || !navigator.sendBeacon || !this._pending || !this._pending.size) return;
+    for(const key of this._pending){
+      const raw = localStorage.getItem('be_'+key);
+      if(raw == null) continue;
+      try{
+        navigator.sendBeacon(c.url,
+          new Blob([JSON.stringify({secret:c.secret, key, value: raw})], {type:'text/plain;charset=utf-8'})
+        );
+      }catch(e){}
+    }
+    this._pending.clear();
   },
   async pullAll(){
     const c = this.getConfig();
@@ -1095,6 +1115,12 @@ const CloudSync = {
     return await this.pushOne('__ping__', {test:true, at:new Date().toISOString()});
   }
 };
+// Garante que qualquer dado não confirmado seja enviado quando o usuário fechar a aba,
+// atualizar a página ou trocar de site — usando sendBeacon, que o navegador garante
+// que completa mesmo durante o unload.
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ CloudSync.flushPending(); sendBeaconFlushSprint2(); } });
+window.addEventListener('pagehide', ()=>{ CloudSync.flushPending(); sendBeaconFlushSprint2(); });
+window.addEventListener('beforeunload', ()=>{ CloudSync.flushPending(); sendBeaconFlushSprint2(); });
 
 /* ---------------------------------------------------------
    2. UTIL
@@ -4320,9 +4346,7 @@ function sendBeaconFlushSprint2(){
     navigator.sendBeacon(c.url, new Blob([JSON.stringify({secret:c.secret, key:'sprint2_tasks', value: JSON.stringify(SPRINT2.tasks)})], {type:'text/plain;charset=utf-8'}));
   }catch(e){ /* melhor esforço */ }
 }
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden) sendBeaconFlushSprint2(); });
-window.addEventListener('pagehide', sendBeaconFlushSprint2);
-window.addEventListener('beforeunload', sendBeaconFlushSprint2);
+// (flush on page close is handled centrally in the CloudSync section above)
 // Aplica os Sprints 2.0 vindos da nuvem (chegam via localStorage depois do pullAllAndApply
 // geral, mas essa parte específica precisa ser gravada também no IndexedDB).
 async function applySprint2FromCloud(){
