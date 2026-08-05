@@ -3786,13 +3786,23 @@ const CHALLENGES_DEFAULT = [
   {
     id:'sugar45',
     title:'🍬 45 Dias Sem Açúcar',
-    startDate:'2026-08-04',
+    startDate:'2026-08-05',
     totalDays:45,
     color:'#C9A34E',
     description:'Zero açúcar refinado, bebidas açucaradas e doces processados.',
   }
 ];
-function getChallenges(){ return DB.get('challenges', CHALLENGES_DEFAULT); }
+function getChallenges(){
+  const stored = DB.get('challenges', null);
+  if(stored){
+    // migração: corrige startDate se ainda estiver com a data antiga (04/08)
+    let changed = false;
+    stored.forEach(ch=>{ if(ch.id==='sugar45' && ch.startDate==='2026-08-04'){ ch.startDate='2026-08-05'; changed=true; } });
+    if(changed) saveChallenges(stored);
+    return stored;
+  }
+  return CHALLENGES_DEFAULT;
+}
 function saveChallenges(list){ DB.set('challenges', list); }
 function getChallengeLog(){ return DB.get('challengeLog', {}); }
 function saveChallengeLog(obj){ DB.set('challengeLog', obj); }
@@ -5418,13 +5428,26 @@ function migrateCategoriesV3(){
   DB.set('categoriesV3Migrated', true);
 }
 
+// Remove todos os eventos que não vieram de sincronização de calendário externo.
+// Roda uma única vez — resolve o problema dos eventos manuais que ficaram acumulados.
+function cleanManualEvents(){
+  if(DB.get('manualEventsCleaned', false)) return;
+  const list = Store.events();
+  // Mantém APENAS eventos vindos do Google Calendar / Outlook
+  const cleaned = list.filter(e => e.googleId || e.googleCalendarId || e.outlookUid);
+  Store.saveEvents(cleaned); // também envia pra nuvem via push automático
+  DB.set('manualEventsCleaned', true);
+  console.log('cleanManualEvents: removed', list.length - cleaned.length, 'manual events');
+}
+
 /* ---------------------------------------------------------
-   23. INIT — ordem importa:
-   1. Aplica tema salvo localmente (para a tela não piscar)
-   2. Mostra o app com o que já está no localStorage local
-   3. Puxa a nuvem (sobrescreve o local com a versão mais recente)
-   4. Só então roda seedDefaults (não sobrescreve nada que veio da nuvem)
-   5. Migrações e importações de sprint também rodam depois do pull
+   23. INIT
+   Estratégia local-first: dados locais são sempre a fonte de
+   verdade. A nuvem é backup e sincronização entre aparelhos.
+   Auto-pull acontece UMA ÚNICA VEZ por aparelho (quando não há
+   nada salvo localmente — ou seja, primeiro acesso nesse browser).
+   Depois disso, o usuário usa "Puxar da nuvem agora" para trazer
+   mudanças feitas em outros aparelhos.
 --------------------------------------------------------- */
 const savedSettings = Store.settings();
 applyTheme(savedSettings.theme || 'light');
@@ -5432,23 +5455,24 @@ calState.date = new Date(2026,7,1);
 switchView('home');
 (async function initCloudAndSprints(){
   await loadSprintCache();
-  if(CloudSync.isConfigured()){
+  // Auto-pull apenas se este aparelho ainda não tem dados locais (primeira abertura)
+  const isFirstOpen = !localStorage.getItem('be_seeded') && !localStorage.getItem('be_manualEventsCleaned');
+  if(CloudSync.isConfigured() && isFirstOpen){
     const r = await CloudSync.pullAllAndApply();
     if(r.ok){
       await applySprint2FromCloud();
       const t = Store.settings();
       applyTheme(t.theme || 'light');
-    } else {
-      console.warn('CloudSync auto-pull falhou:', r.error);
+      toast('Dados restaurados da nuvem ☁️ — bem-vinda de volta!');
     }
   }
-  // seed e migrações rodam DEPOIS do pull para não sobrescrever dados reais da nuvem
+  // seed e migrações sempre rodam depois (são idempotentes — não sobrescrevem dados reais)
   seedDefaults();
+  cleanManualEvents();
   cleanSeedEvents();
   migrateCategoriesV3();
   importQ3SprintTasks();
   switchView(currentView);
-  if(CloudSync.isConfigured()) toast('Dados sincronizados da nuvem ☁️');
 })();
 
 </script>
